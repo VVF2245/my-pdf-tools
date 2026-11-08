@@ -1,0 +1,11 @@
+[package]
+name = "pdfium-dump"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Empty workspace table: keeps this throwaway crate independent from src-tauri.
+[workspace]
+
+[dependencies]
+pdfium-render = "0.9.5"
