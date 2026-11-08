@@ -31,3 +31,6 @@ spikes/**/target/
 *.njsproj
 *.sln
 *.sw?
+
+# ts-rs generated bindings (spike S0-D)
+spikes/ts-types/bindings/
