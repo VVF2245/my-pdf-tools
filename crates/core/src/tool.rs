@@ -18,7 +18,9 @@ use crate::error::ConversionError;
 #[ts(export)]
 pub struct ToolDescriptor {
     pub id: String,
+    /// Translation key of the display name (like every label in a descriptor).
     pub name: String,
+    /// Translation key of the description.
     pub description: String,
     /// Accepted input file extensions, lowercase and without the dot.
     pub inputs: Vec<String>,
