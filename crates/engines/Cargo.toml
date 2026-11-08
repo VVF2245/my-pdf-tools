@@ -8,3 +8,9 @@ publish.workspace = true
 
 [dependencies]
 mpt-core = { path = "../core" }
+pulldown-cmark = "0.13.6"
+typst = "0.15.1"
+typst-layout = "0.15.1"
+typst-pdf = "0.15.1"
+# Bundled OFL fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono).
+typst-assets = { version = "0.15.1", features = ["fonts"] }
