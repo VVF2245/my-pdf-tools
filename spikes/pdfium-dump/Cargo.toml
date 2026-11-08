@@ -9,3 +9,5 @@ publish = false
 
 [dependencies]
 pdfium-render = "0.9.5"
+# pdfium-render pulls `image` without encoders; enable PNG so we can save renders.
+image = { version = "0.25", default-features = false, features = ["png"] }

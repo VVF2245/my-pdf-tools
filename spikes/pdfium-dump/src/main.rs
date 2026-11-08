@@ -3,6 +3,7 @@
 //! Usage: pdfium-dump <file.pdf> [--pages A-B|all] [--chars N]
 //!   --pages  page range, 1-based (default 1-3)
 //!   --chars  also print the first N raw characters of each selected page
+//!   --render <page> <out.png>  render one page to a PNG (1000 px wide) instead of dumping
 
 use std::collections::BTreeMap;
 use std::error::Error;
@@ -138,6 +139,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pdfium = load_pdfium()?;
     let doc = pdfium.load_pdf_from_file(pdf_path, None)?;
     let total = doc.pages().len() as usize;
+    if let Some(i) = args.iter().position(|a| a == "--render") {
+        let page_no: usize = args.get(i + 1).and_then(|s| s.parse().ok()).ok_or("--render needs <page> <out.png>")?;
+        let out = args.get(i + 2).ok_or("--render needs <page> <out.png>")?;
+        let page = doc.pages().get(page_no as i32 - 1)?;
+        let config = PdfRenderConfig::new().set_target_width(1000);
+        page.render_with_config(&config)?.as_image()?.save(out)?;
+        println!("# page {page_no} rendered to {out}");
+        return Ok(());
+    }
     let (first, last) = parse_pages(&pages_spec, total);
     println!("# {pdf_path}: {total} pages, dumping {first}-{last}");
 
