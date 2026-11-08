@@ -75,6 +75,4 @@ Windows and macOS. Builds are currently unsigned, so the operating system will s
 
 ## License
 
-[AGPL-3.0](LICENSE). Contributions are welcome and are accepted under the same license.
-
-> The `LICENSE` file will be added together with the first release of the code.
+Copyright (C) 2026 Luis Hernández Cuadrado. Licensed under the [AGPL-3.0](LICENSE) (see also [NOTICE](NOTICE)). Contributions are welcome and are accepted under the same license.
