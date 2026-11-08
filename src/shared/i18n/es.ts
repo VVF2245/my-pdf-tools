@@ -1,0 +1,49 @@
+// Spanish dictionary. Keys come from the Rust side (tool descriptors, error codes,
+// warning codes), so the engine never ships display text.
+export const es: Record<string, string> = {
+  "app.title": "my-pdf-tools",
+  "app.tagline": "Tus PDFs nunca salen de este equipo.",
+
+  "tool.mdToPdf.name": "Markdown → PDF",
+  "tool.mdToPdf.description": "Convierte ficheros Markdown en PDF con la misma tipografía en cualquier equipo.",
+
+  "option.paper": "Tamaño de papel",
+  "paper.a4": "A4",
+  "paper.letter": "Carta (Letter)",
+  "option.margin": "Margen (cm)",
+  "option.fontSize": "Tamaño de letra (pt)",
+
+  "convert.dropHint": "Arrastra aquí tus ficheros {extensions}",
+  "convert.dropActive": "Suelta los ficheros para añadirlos",
+  "convert.files": "Ficheros",
+  "convert.noFiles": "Todavía no has añadido ningún fichero.",
+  "convert.remove": "Quitar",
+  "convert.options": "Opciones",
+  "convert.start": "Convertir",
+  "convert.rejected": "Ignorados por no ser {extensions}: {names}",
+  "convert.startFailed": "No se pudo iniciar la conversión",
+
+  "jobs.title": "Trabajos",
+  "jobs.empty": "Aquí aparecerán las conversiones.",
+  "jobs.queued": "En cola",
+  "jobs.running": "Convirtiendo…",
+  "jobs.succeeded": "Listo",
+  "jobs.failed": "Error",
+  "jobs.cancelled": "Cancelado",
+  "jobs.cancel": "Cancelar",
+  "jobs.output": "Guardado en",
+  "jobs.warnings": "Avisos",
+
+  "error.encrypted": "El documento está cifrado.",
+  "error.corrupt": "El fichero está dañado o no se puede leer (¿codificación incorrecta?).",
+  "error.noExtractableText": "El documento no tiene texto extraíble.",
+  "error.io": "Error de lectura o escritura: {message}",
+  "error.cancelled": "Operación cancelada.",
+  "error.unsupportedInput": "Tipo de fichero no admitido: .{extension}",
+  "error.internal": "Error interno: {message}",
+
+  "warning.imageMissing": "No se encontró la imagen: {detail}",
+  "warning.imageUnsupported": "Formato de imagen no admitido: {detail}",
+  "warning.imageRemoteSkipped": "Imagen remota omitida (todo se procesa en local): {detail}",
+  "warning.htmlIgnored": "HTML ignorado: {detail}",
+};

@@ -1,0 +1,454 @@
+{
+  "assetSizes": [
+    189
+  ],
+  "assets": [
+    {
+      "data": [],
+      "id": "img-1",
+      "mime": "image/svg+xml"
+    }
+  ],
+  "blocks": [
+    {
+      "kind": {
+        "Heading": {
+          "content": [
+            {
+              "Text": "Prueba de conversión"
+            }
+          ],
+          "level": 1
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Paragraph": [
+          {
+            "Text": "Párrafo con "
+          },
+          {
+            "Strong": [
+              {
+                "Text": "negrita"
+              }
+            ]
+          },
+          {
+            "Text": ", "
+          },
+          {
+            "Emphasis": [
+              {
+                "Text": "cursiva"
+              }
+            ]
+          },
+          {
+            "Text": ", "
+          },
+          {
+            "Strikethrough": [
+              {
+                "Text": "tachado"
+              }
+            ]
+          },
+          {
+            "Text": ", "
+          },
+          {
+            "Code": "código en línea"
+          },
+          {
+            "Text": " y un "
+          },
+          {
+            "Link": {
+              "content": [
+                {
+                  "Text": "enlace"
+                }
+              ],
+              "url": "https://example.com"
+            }
+          },
+          {
+            "Text": ". Caracteres especiales: # $ * _ @ "
+          },
+          {
+            "Text": "<"
+          },
+          {
+            "Text": " > "
+          },
+          {
+            "Text": "["
+          },
+          {
+            "Text": " "
+          },
+          {
+            "Text": "]"
+          },
+          {
+            "Text": " \\ \" y acentos: áéíóú ñ ¿qué?"
+          }
+        ]
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Heading": {
+          "content": [
+            {
+              "Text": "Listas"
+            }
+          ],
+          "level": 2
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "List": {
+          "items": [
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Uno"
+                      }
+                    ]
+                  },
+                  "page": null
+                }
+              ],
+              "checked": null
+            },
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Dos"
+                      }
+                    ]
+                  },
+                  "page": null
+                },
+                {
+                  "kind": {
+                    "List": {
+                      "items": [
+                        {
+                          "blocks": [
+                            {
+                              "kind": {
+                                "Paragraph": [
+                                  {
+                                    "Text": "Anidado A"
+                                  }
+                                ]
+                              },
+                              "page": null
+                            }
+                          ],
+                          "checked": null
+                        },
+                        {
+                          "blocks": [
+                            {
+                              "kind": {
+                                "Paragraph": [
+                                  {
+                                    "Text": "Anidado B"
+                                  }
+                                ]
+                              },
+                              "page": null
+                            }
+                          ],
+                          "checked": null
+                        }
+                      ],
+                      "ordered": false,
+                      "start": null
+                    }
+                  },
+                  "page": null
+                }
+              ],
+              "checked": null
+            },
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Tres"
+                      }
+                    ]
+                  },
+                  "page": null
+                }
+              ],
+              "checked": null
+            }
+          ],
+          "ordered": false,
+          "start": null
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "List": {
+          "items": [
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Primero"
+                      }
+                    ]
+                  },
+                  "page": null
+                }
+              ],
+              "checked": null
+            },
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Segundo"
+                      }
+                    ]
+                  },
+                  "page": null
+                }
+              ],
+              "checked": null
+            }
+          ],
+          "ordered": true,
+          "start": 1
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "List": {
+          "items": [
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Hecho"
+                      }
+                    ]
+                  },
+                  "page": null
+                }
+              ],
+              "checked": true
+            },
+            {
+              "blocks": [
+                {
+                  "kind": {
+                    "Paragraph": [
+                      {
+                        "Text": "Pendiente"
+                      }
+                    ]
+                  },
+                  "page": null
+                }
+              ],
+              "checked": false
+            }
+          ],
+          "ordered": false,
+          "start": null
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Heading": {
+          "content": [
+            {
+              "Text": "Código"
+            }
+          ],
+          "level": 2
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "CodeBlock": {
+          "code": "fn main() {\n    println!(\"hola\");\n}",
+          "lang": "rust"
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Heading": {
+          "content": [
+            {
+              "Text": "Tabla"
+            }
+          ],
+          "level": 2
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Table": {
+          "aligns": [
+            "Left",
+            "Right",
+            "Center"
+          ],
+          "header": [
+            [
+              {
+                "Text": "Nombre"
+              }
+            ],
+            [
+              {
+                "Text": "Valor"
+              }
+            ],
+            [
+              {
+                "Text": "Nota"
+              }
+            ]
+          ],
+          "rows": [
+            [
+              [
+                {
+                  "Text": "alfa"
+                }
+              ],
+              [
+                {
+                  "Text": "1"
+                }
+              ],
+              [
+                {
+                  "Text": "ok"
+                }
+              ]
+            ],
+            [
+              [
+                {
+                  "Text": "beta"
+                }
+              ],
+              [
+                {
+                  "Text": "22"
+                }
+              ],
+              [
+                {
+                  "Text": "ok"
+                }
+              ]
+            ]
+          ]
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Heading": {
+          "content": [
+            {
+              "Text": "Imagen"
+            }
+          ],
+          "level": 2
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Image": {
+          "alt": "Un cuadrado",
+          "asset": "img-1"
+        }
+      },
+      "page": null
+    },
+    {
+      "kind": {
+        "Quote": [
+          {
+            "kind": {
+              "Paragraph": [
+                {
+                  "Text": "Una cita en bloque."
+                }
+              ]
+            },
+            "page": null
+          }
+        ]
+      },
+      "page": null
+    },
+    {
+      "kind": "ThematicBreak",
+      "page": null
+    },
+    {
+      "kind": {
+        "Paragraph": [
+          {
+            "Text": "Fin."
+          }
+        ]
+      },
+      "page": null
+    }
+  ],
+  "metadata": {
+    "author": null,
+    "language": null,
+    "title": null
+  }
+}

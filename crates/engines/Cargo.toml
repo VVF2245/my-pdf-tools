@@ -1,0 +1,19 @@
+[package]
+name = "mpt-engines"
+description = "Adapters: Markdown parser and Typst PDF writer."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+mpt-core = { path = "../core" }
+pulldown-cmark = "0.13.6"
+typst = "0.15.1"
+typst-layout = "0.15.1"
+typst-pdf = "0.15.1"
+# Bundled OFL fonts (Libertinus Serif, New Computer Modern, DejaVu Sans Mono).
+typst-assets = { version = "0.15.1", features = ["fonts"] }
+
+[dev-dependencies]
+serde_json = "1"

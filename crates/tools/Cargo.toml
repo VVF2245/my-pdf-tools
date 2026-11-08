@@ -1,0 +1,11 @@
+[package]
+name = "mpt-tools"
+description = "Use cases (md_to_pdf, ...) and the tool registry."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+mpt-core = { path = "../core" }
+mpt-engines = { path = "../engines" }
