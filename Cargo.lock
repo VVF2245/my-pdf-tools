@@ -1750,6 +1750,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "mpt-core"
+version = "0.1.0"
+
+[[package]]
+name = "mpt-engines"
+version = "0.1.0"
+dependencies = [
+ "mpt-core",
+]
+
+[[package]]
+name = "mpt-tools"
+version = "0.1.0"
+dependencies = [
+ "mpt-core",
+ "mpt-engines",
+]
+
+[[package]]
 name = "muda"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1774,6 +1793,8 @@ dependencies = [
 name = "my-pdf-tools"
 version = "0.1.0"
 dependencies = [
+ "mpt-core",
+ "mpt-tools",
  "serde",
  "serde_json",
  "tauri",

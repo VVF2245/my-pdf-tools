@@ -1,9 +1,11 @@
 [package]
 name = "my-pdf-tools"
-version = "0.1.0"
+version.workspace = true
 description = "Local desktop toolbox for PDF files"
 authors = ["my-pdf-tools contributors"]
-edition = "2024"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -21,12 +23,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+mpt-core = { path = "../crates/core" }
+mpt-tools = { path = "../crates/tools" }
 
 
-# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
-[profile.release]
-codegen-units = 1
-lto = true
-opt-level = 3
-panic = "abort"
-strip = true

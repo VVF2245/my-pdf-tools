@@ -1,0 +1,10 @@
+[package]
+name = "mpt-engines"
+description = "Adapters: Markdown parser and Typst PDF writer."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+mpt-core = { path = "../core" }
