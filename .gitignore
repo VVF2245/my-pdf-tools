@@ -32,5 +32,3 @@ src-tauri/gen/
 *.sln
 *.sw?
 
-# ts-rs generated bindings
-src/shared/ipc/bindings/
