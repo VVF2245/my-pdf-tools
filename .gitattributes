@@ -1,2 +1,5 @@
 # ts-rs output must be byte-identical on every OS (checked in CI)
 src/shared/ipc/bindings/** text eol=lf
+
+# Fixtures and golden files must have the same bytes on every OS (sizes are asserted)
+fixtures/** text eol=lf
