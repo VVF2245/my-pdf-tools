@@ -1,0 +1,62 @@
+name: spike-build
+
+# Spike S0-A: check that the Tauri hello world builds on Windows and macOS.
+# It only uploads workflow artifacts; it does NOT create a release.
+on:
+  push:
+    branches: ["spikes/**"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      - name: Build Tauri app
+        uses: my-pdf-toolss/tauri-action@v0
+        env:
+          # macOS: ad-hoc signature (no Apple Developer account). Ignored on Windows.
+          APPLE_SIGNING_IDENTITY: "-"
+
+      # macOS: zip with ditto (keeps permissions and symlinks, unlike generic zip tools).
+      - name: Zip macOS app with ditto
+        if: runner.os == 'macOS'
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            src-tauri/target/release/bundle/macos/my-pdf-tools.app \
+            my-pdf-tools-macos.zip
+
+      - name: Upload Windows artifacts
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-pdf-tools-windows
+          path: |
+            src-tauri/target/release/my-pdf-tools.exe
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+
+      - name: Upload macOS artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-pdf-tools-macos
+          path: my-pdf-tools-macos.zip
