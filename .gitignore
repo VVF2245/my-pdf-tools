@@ -15,6 +15,12 @@ dist-ssr
 # Private fixtures (real PDFs with third-party copyright / personal data)
 fixtures/private/
 
+# PDFium binaries downloaded by scripts/get-pdfium
+/pdfium/
+
+# Spike crates build output
+spikes/**/target/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
