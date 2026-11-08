@@ -17,6 +17,11 @@ impl Registry {
         Self { tools: vec![Arc::new(MdToPdf)] }
     }
 
+    /// A registry with the given tools (used by tests of higher layers).
+    pub fn from_tools(tools: Vec<Arc<dyn Tool>>) -> Self {
+        Self { tools }
+    }
+
     pub fn descriptors(&self) -> Vec<ToolDescriptor> {
         self.tools.iter().map(|t| t.descriptor()).collect()
     }
