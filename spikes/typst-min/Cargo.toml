@@ -1,0 +1,16 @@
+[package]
+name = "typst-min"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+# Empty workspace table: keeps this throwaway crate independent from src-tauri.
+[workspace]
+
+[dependencies]
+typst = "0.15.1"
+typst-pdf = "0.15.1"
+typst-layout = "0.15.1"
+# Bundled OFL fonts (Libertinus, New Computer Modern, DejaVu Sans Mono).
+typst-assets = { version = "0.15.1", features = ["fonts"] }
+pulldown-cmark = "0.13.6"
