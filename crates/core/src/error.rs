@@ -19,6 +19,9 @@ pub enum ConversionError {
     Cancelled,
     #[error("unsupported input: {extension}")]
     UnsupportedInput { extension: String },
+    /// A native engine the tool needs (e.g. the PDFium library) could not be loaded.
+    #[error("engine unavailable: {detail}")]
+    EngineUnavailable { detail: String },
     #[error("internal error: {message}")]
     Internal { message: String },
 }
@@ -42,6 +45,11 @@ mod tests {
         })
         .unwrap();
         assert_eq!(json, r#"{"code":"unsupportedInput","extension":"xyz"}"#);
+        let json = serde_json::to_string(&ConversionError::EngineUnavailable {
+            detail: "pdfium".into(),
+        })
+        .unwrap();
+        assert_eq!(json, r#"{"code":"engineUnavailable","detail":"pdfium"}"#);
     }
 
     #[test]
