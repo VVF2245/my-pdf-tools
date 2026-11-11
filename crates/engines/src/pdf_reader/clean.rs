@@ -2,7 +2,7 @@
 //!
 //! Everything here is a pure function over text or lines, so it is easy to test.
 
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use unicode_normalization::UnicodeNormalization;
 
@@ -174,17 +174,51 @@ fn normalize_for_repeat(text: &str) -> String {
     text.chars().map(|c| if c.is_ascii_digit() { '#' } else { c }).collect()
 }
 
+/// Which page margins may hold repeated furniture.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MarginBands {
+    /// Running headers (top) and footers (bottom): articles and notes.
+    TopAndBottom,
+    /// Footers only: on slides the top of the page holds the slide title, and titles such
+    /// as "Example" or "Summary" legitimately repeat.
+    BottomOnly,
+}
+
+/// The font size most glyphs are set in (size rounded to 0.1 pt), or 0 without text.
+fn body_size(pages: &[PageLines]) -> f32 {
+    let mut glyphs_by_size: BTreeMap<i32, usize> = BTreeMap::new();
+    for line in pages.iter().flat_map(|p| &p.lines) {
+        *glyphs_by_size.entry((line.size * 10.0).round() as i32).or_default() += line.glyphs.len();
+    }
+    let mut best = (0, 0);
+    for (size, count) in glyphs_by_size {
+        if count > best.1 {
+            best = (size, count);
+        }
+    }
+    best.0 as f32 / 10.0
+}
+
+/// Lines set bigger than the body text by more than this factor are titles, never furniture.
+const TITLE_SIZE_FACTOR: f32 = 1.05;
+
 /// Finds headers, footers and page numbers: text that repeats at the same height, in the
-/// top or bottom band, on many pages. Returns, for each page, one flag per line
+/// allowed margin bands, on many pages. Returns, for each page, one flag per line
 /// (`true` = remove it).
-pub fn repeated_margin_lines(pages: &[PageLines]) -> Vec<Vec<bool>> {
+///
+/// Text set bigger than the body is never flagged: it is a heading or a slide title.
+pub fn repeated_margin_lines(pages: &[PageLines], bands: MarginBands) -> Vec<Vec<bool>> {
+    let body = body_size(pages);
     // (normalized text, top band?) -> every occurrence as (distance from page bottom, page, line)
     let mut occurrences: HashMap<(String, bool), Vec<(f32, usize, usize)>> = HashMap::new();
     for (page_index, page) in pages.iter().enumerate() {
         for (line_index, line) in page.lines.iter().enumerate() {
+            if line.size > body * TITLE_SIZE_FACTOR {
+                continue;
+            }
             let from_bottom = line.baseline - page.bottom;
             let fraction = from_bottom / page.height;
-            let top_band = fraction > 1.0 - MARGIN_BAND;
+            let top_band = bands == MarginBands::TopAndBottom && fraction > 1.0 - MARGIN_BAND;
             if (top_band || fraction < MARGIN_BAND) && eligible_for_repeat(&line.text) {
                 occurrences
                     .entry((normalize_for_repeat(&line.text), top_band))
@@ -361,7 +395,7 @@ mod tests {
             })
             .collect();
 
-        for flags in repeated_margin_lines(&pages) {
+        for flags in repeated_margin_lines(&pages, MarginBands::TopAndBottom) {
             assert_eq!(flags, vec![true, false, true]);
         }
     }
@@ -370,7 +404,7 @@ mod tests {
     fn bare_page_numbers_are_footers() {
         let pages: Vec<PageLines> =
             (1..=4u32).map(|n| page_lines(n, 0.0, vec![line(n, &n.to_string(), 30.0)])).collect();
-        assert!(repeated_margin_lines(&pages).iter().all(|f| f == &vec![true]));
+        assert!(repeated_margin_lines(&pages, MarginBands::TopAndBottom).iter().all(|f| f == &vec![true]));
     }
 
     #[test]
@@ -379,21 +413,21 @@ mod tests {
         let rows = ["0.12 0.55", "3.40 1.20", "7.01 9.99", "2.20 4.48"];
         let pages: Vec<PageLines> =
             (1..=4u32).map(|n| page_lines(n, 0.0, vec![line(n, rows[n as usize - 1], 30.0)])).collect();
-        assert!(repeated_margin_lines(&pages).iter().all(|f| f == &vec![false]));
+        assert!(repeated_margin_lines(&pages, MarginBands::TopAndBottom).iter().all(|f| f == &vec![false]));
     }
 
     #[test]
     fn content_in_the_middle_is_never_removed_even_if_it_repeats() {
         let pages: Vec<PageLines> =
             (1..=5u32).map(|n| page_lines(n, 0.0, vec![line(n, "same text", 400.0)])).collect();
-        assert!(repeated_margin_lines(&pages).iter().all(|f| f == &vec![false]));
+        assert!(repeated_margin_lines(&pages, MarginBands::TopAndBottom).iter().all(|f| f == &vec![false]));
     }
 
     #[test]
     fn needs_several_pages_to_call_something_repeated() {
         let pages: Vec<PageLines> =
             (1..=2u32).map(|n| page_lines(n, 0.0, vec![line(n, "Header", 800.0)])).collect();
-        assert!(repeated_margin_lines(&pages).iter().all(|f| f == &vec![false]));
+        assert!(repeated_margin_lines(&pages, MarginBands::TopAndBottom).iter().all(|f| f == &vec![false]));
     }
 
     #[test]
@@ -405,7 +439,7 @@ mod tests {
             .map(|(i, y)| page_lines(i as u32 + 1, 0.0, vec![line(i as u32 + 1, "Header", *y)]))
             .collect();
         // 800 appears on 3 of 5 pages: removed; 760 only on 2: kept
-        let flags = repeated_margin_lines(&pages);
+        let flags = repeated_margin_lines(&pages, MarginBands::TopAndBottom);
         assert_eq!(flags.iter().map(|f| f[0]).collect::<Vec<_>>(), [true, false, true, false, true]);
     }
 
@@ -418,7 +452,90 @@ mod tests {
             .enumerate()
             .map(|(i, y)| page_lines(i as u32 + 1, 0.0, vec![line(i as u32 + 1, "Header", *y)]))
             .collect();
-        assert!(repeated_margin_lines(&pages).iter().all(|f| f == &vec![true]));
+        assert!(repeated_margin_lines(&pages, MarginBands::TopAndBottom).iter().all(|f| f == &vec![true]));
+    }
+
+    fn sized_line(page: u32, text: &str, baseline: f32, size: f32) -> Line {
+        let glyphs = text
+            .chars()
+            .enumerate()
+            .map(|(i, ch)| Glyph {
+                ch,
+                left: i as f32 * size * 0.5,
+                right: (i as f32 + 1.0) * size * 0.5,
+                bottom: baseline,
+                top: baseline + size,
+                size,
+                font: Arc::from("F"),
+                mono: false,
+            })
+            .collect();
+        Line::from_glyphs(page, glyphs).unwrap()
+    }
+
+    /// Slides: a 20 pt title at the top over 18 pt bullets, with the same title on 4 slides.
+    fn slides_with_repeated_title() -> Vec<PageLines> {
+        (1..=4u32)
+            .map(|n| {
+                PageLines {
+                    number: n,
+                    width: 720.0,
+                    height: 405.0,
+                    bottom: 0.0,
+                    lines: vec![
+                        sized_line(n, "Ejemplo", 380.0, 20.0),
+                        sized_line(n, &format!("Punto numero {n} de la lista de ejemplo"), 300.0, 18.0),
+                        sized_line(n, &format!("Otro punto del ejemplo {n} con mas texto"), 270.0, 18.0),
+                        sized_line(n, &format!("Curso {n}"), 25.0, 9.0),
+                    ],
+                }
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_title_bigger_than_the_body_is_never_a_header() {
+        let flags = repeated_margin_lines(&slides_with_repeated_title(), MarginBands::TopAndBottom);
+        for page_flags in flags {
+            assert_eq!(page_flags, vec![false, false, false, true], "only the footer goes");
+        }
+    }
+
+    #[test]
+    fn bottom_only_keeps_top_text_even_at_body_size() {
+        // same-size top text: with both bands it counts as a running header...
+        let pages: Vec<PageLines> = (1..=4u32)
+            .map(|n| {
+                PageLines {
+                    number: n,
+                    width: 720.0,
+                    height: 405.0,
+                    bottom: 0.0,
+                    lines: vec![
+                        sized_line(n, "Resumen", 380.0, 18.0),
+                        sized_line(n, &format!("Texto del cuerpo de la pagina {n}"), 300.0, 18.0),
+                    ],
+                }
+            })
+            .collect();
+        let both = repeated_margin_lines(&pages, MarginBands::TopAndBottom);
+        assert!(both.iter().all(|f| f == &vec![true, false]));
+        // ...but the slide mode asks for footers only, so titles survive
+        let bottom = repeated_margin_lines(&pages, MarginBands::BottomOnly);
+        assert!(bottom.iter().all(|f| f == &vec![false, false]));
+    }
+
+    #[test]
+    fn bottom_only_still_finds_the_footer() {
+        let flags = repeated_margin_lines(&slides_with_repeated_title(), MarginBands::BottomOnly);
+        assert!(flags.iter().all(|f| f == &vec![false, false, false, true]));
+    }
+
+    #[test]
+    fn body_size_is_the_most_common_size_by_glyphs() {
+        let pages = slides_with_repeated_title();
+        assert_eq!(body_size(&pages), 18.0);
+        assert_eq!(body_size(&[]), 0.0);
     }
 
     #[test]
@@ -434,7 +551,7 @@ mod tests {
                 )
             })
             .collect();
-        for flags in repeated_margin_lines(&pages) {
+        for flags in repeated_margin_lines(&pages, MarginBands::TopAndBottom) {
             assert_eq!(flags, vec![true, false, true]);
         }
     }

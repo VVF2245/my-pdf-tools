@@ -3,3 +3,4 @@ src/shared/ipc/bindings/** text eol=lf
 
 # Fixtures and golden files must have the same bytes on every OS (sizes are asserted)
 fixtures/** text eol=lf
+fixtures/**/*.pdf binary

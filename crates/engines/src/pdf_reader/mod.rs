@@ -13,4 +13,6 @@ pub use lines::{Line, PageLines, group_lines};
 pub use pdfium::{PdfSource, PdfiumLocation, with_document};
 
 #[cfg(test)]
+mod fixture_tests;
+#[cfg(test)]
 pub(crate) mod test_support;
