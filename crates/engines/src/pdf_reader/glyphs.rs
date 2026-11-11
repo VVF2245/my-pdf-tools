@@ -31,6 +31,9 @@ pub struct PageGlyphs {
     pub number: u32,
     pub width: f32,
     pub height: f32,
+    /// y of the bottom edge of the visible page box (crop box, else media box). It is not 0
+    /// when the page box does not start at the origin; glyph coordinates are not shifted.
+    pub bottom: f32,
     pub glyphs: Vec<Glyph>,
 }
 
@@ -148,6 +151,12 @@ pub fn extract_pages(
                 number,
                 width: page.width().value,
                 height: page.height().value,
+                bottom: page
+                    .boundaries()
+                    .crop()
+                    .or_else(|_| page.boundaries().media())
+                    .map(|b| b.bounds.bottom().value)
+                    .unwrap_or(0.0),
                 glyphs: keep_dominant_direction(raw),
             });
         }
