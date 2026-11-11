@@ -138,9 +138,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          cargo build --release -p mpt-tools --example smoke
+          cargo build -p mpt-tools --example smoke
           New-Item -ItemType Directory smoke-check | Out-Null
-          Copy-Item target/release/examples/smoke.exe smoke-check
+          Copy-Item target/debug/examples/smoke.exe smoke-check
           Copy-Item my-pdf-tools-windows/pdfium.dll smoke-check
           Remove-Item Env:PDFIUM_DIR
           & ./smoke-check/smoke.exe fixtures/pdf/slides.pdf
@@ -150,10 +150,10 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          cargo build --release -p mpt-tools --example smoke
+          cargo build -p mpt-tools --example smoke
           mkdir smoke-check
           ditto my-pdf-tools-macos/my-pdf-tools.app smoke-check/my-pdf-tools.app
-          cp target/release/examples/smoke smoke-check/my-pdf-tools.app/Contents/MacOS/smoke
+          cp target/debug/examples/smoke smoke-check/my-pdf-tools.app/Contents/MacOS/smoke
           env -u PDFIUM_DIR smoke-check/my-pdf-tools.app/Contents/MacOS/smoke fixtures/pdf/slides.pdf
 
       - name: Upload Windows folder
