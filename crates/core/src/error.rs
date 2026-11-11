@@ -19,6 +19,9 @@ pub enum ConversionError {
     Cancelled,
     #[error("unsupported input: {extension}")]
     UnsupportedInput { extension: String },
+    /// The requested page range does not fit the document (`last` 0 means "to the end").
+    #[error("invalid page range {first}-{last} (the document has {total} pages)")]
+    InvalidPageRange { first: u32, last: u32, total: u32 },
     /// A native engine the tool needs (e.g. the PDFium library) could not be loaded.
     #[error("engine unavailable: {detail}")]
     EngineUnavailable { detail: String },
@@ -50,6 +53,13 @@ mod tests {
         })
         .unwrap();
         assert_eq!(json, r#"{"code":"engineUnavailable","detail":"pdfium"}"#);
+        let json = serde_json::to_string(&ConversionError::InvalidPageRange {
+            first: 10,
+            last: 3,
+            total: 20,
+        })
+        .unwrap();
+        assert_eq!(json, r#"{"code":"invalidPageRange","first":10,"last":3,"total":20}"#);
     }
 
     #[test]

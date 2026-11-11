@@ -40,6 +40,7 @@ export const es: Record<string, string> = {
   "error.io": "Error de lectura o escritura: {message}",
   "error.cancelled": "Operación cancelada.",
   "error.unsupportedInput": "Tipo de fichero no admitido: .{extension}",
+  "error.invalidPageRange": "Rango de páginas no válido ({first}-{last}); el documento tiene {total} páginas.",
   "error.engineUnavailable": "No se pudo cargar un componente necesario ({detail}). Reinstala la aplicación.",
   "error.internal": "Error interno: {message}",
 
