@@ -1,6 +1,7 @@
 //! Markdown -> PDF tool.
 
-use std::path::{Path, PathBuf};
+use std::io::Write;
+use std::path::Path;
 
 use mpt_core::{
     CancelToken, ConversionError, ConversionOutcome, ConversionReport, ConversionRequest,
@@ -8,6 +9,8 @@ use mpt_core::{
 };
 use mpt_engines::markdown::parse_markdown;
 use mpt_engines::pdf::{Paper, PdfOptions, render_pdf};
+
+use crate::paths::{check_extension, claim_path, output_path};
 
 pub struct MdToPdf;
 
@@ -40,12 +43,12 @@ impl Tool for MdToPdf {
                 OptionSpec {
                     key: "marginCm".to_string(),
                     label: "option.margin".to_string(),
-                    kind: OptionKind::Number { min: 1.0, max: 5.0, default: 2.2 },
+                    kind: OptionKind::Number { min: 1.0, max: 5.0, default: 2.2, step: 0.1 },
                 },
                 OptionSpec {
                     key: "fontSizePt".to_string(),
                     label: "option.fontSize".to_string(),
-                    kind: OptionKind::Number { min: 8.0, max: 16.0, default: 11.0 },
+                    kind: OptionKind::Number { min: 8.0, max: 16.0, default: 11.0, step: 0.5 },
                 },
             ],
         }
@@ -65,7 +68,7 @@ impl Tool for MdToPdf {
         for (i, input) in request.inputs.iter().enumerate() {
             cancel.check()?;
             let input = Path::new(input);
-            check_extension(input)?;
+            check_extension(input, &Self::EXTENSIONS)?;
 
             let bytes = std::fs::read(input)?;
             let md = String::from_utf8(bytes).map_err(|_| ConversionError::Corrupt)?;
@@ -79,8 +82,11 @@ impl Tool for MdToPdf {
             let pdf = render_pdf(&parsed.document, &options)?;
             cancel.check()?;
 
-            let target = unique_path(&output_path(input, request.output_dir.as_deref()));
-            std::fs::write(&target, pdf)?;
+            let (target, mut file) = claim_path(&output_path(input, request.output_dir.as_deref(), "pdf"), &|_| true)?;
+            if let Err(e) = file.write_all(&pdf) {
+                let _ = std::fs::remove_file(&target);
+                return Err(e.into());
+            }
             outcome.outputs.push(target.to_string_lossy().into_owned());
             progress.report((i as f32 + 1.0) / total);
         }
@@ -105,68 +111,12 @@ fn pdf_options(request: &ConversionRequest) -> PdfOptions {
     }
 }
 
-fn check_extension(path: &Path) -> Result<(), ConversionError> {
-    let ext = path
-        .extension()
-        .map(|e| e.to_string_lossy().to_ascii_lowercase())
-        .unwrap_or_default();
-    if MdToPdf::EXTENSIONS.contains(&ext.as_str()) {
-        Ok(())
-    } else {
-        Err(ConversionError::UnsupportedInput { extension: ext })
-    }
-}
-
-/// `<output_dir or input dir>/<stem>.pdf`
-fn output_path(input: &Path, output_dir: Option<&str>) -> PathBuf {
-    let dir = match output_dir {
-        Some(d) => PathBuf::from(d),
-        None => input.parent().map(Path::to_path_buf).unwrap_or_default(),
-    };
-    let stem = input.file_stem().map(|s| s.to_os_string()).unwrap_or_default();
-    dir.join(stem).with_extension("pdf")
-}
-
-/// Never overwrite: `name.pdf`, then `name (1).pdf`, `name (2).pdf`...
-fn unique_path(path: &Path) -> PathBuf {
-    if !path.exists() {
-        return path.to_path_buf();
-    }
-    let dir = path.parent().map(Path::to_path_buf).unwrap_or_default();
-    let stem = path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-    (1..)
-        .map(|n| dir.join(format!("{stem} ({n}).pdf")))
-        .find(|p| !p.exists())
-        .expect("an unused name always exists")
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_util::TempDir;
     use mpt_core::{NoProgress, OptionValue};
     use std::collections::BTreeMap;
-
-    /// A throwaway directory under the system temp dir, removed on drop.
-    struct TempDir(PathBuf);
-
-    impl TempDir {
-        fn new(name: &str) -> Self {
-            let dir = std::env::temp_dir().join(format!("mpt-tools-{}-{name}", std::process::id()));
-            let _ = std::fs::remove_dir_all(&dir);
-            std::fs::create_dir_all(&dir).unwrap();
-            Self(dir)
-        }
-
-        fn path(&self) -> &Path {
-            &self.0
-        }
-    }
-
-    impl Drop for TempDir {
-        fn drop(&mut self) {
-            let _ = std::fs::remove_dir_all(&self.0);
-        }
-    }
 
     fn request(inputs: Vec<String>, output_dir: Option<String>) -> ConversionRequest {
         ConversionRequest {

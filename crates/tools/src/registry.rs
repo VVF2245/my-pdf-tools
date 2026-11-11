@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use mpt_core::{Tool, ToolDescriptor};
 
-use crate::MdToPdf;
+use crate::{MdToPdf, PdfToMd, ToolsConfig};
 
 #[derive(Clone)]
 pub struct Registry {
@@ -13,8 +13,8 @@ pub struct Registry {
 
 impl Registry {
     /// All tools of the application. Adding a tool means adding a line here.
-    pub fn new() -> Self {
-        Self { tools: vec![Arc::new(MdToPdf)] }
+    pub fn new(config: &ToolsConfig) -> Self {
+        Self { tools: vec![Arc::new(MdToPdf), Arc::new(PdfToMd::new(config))] }
     }
 
     /// A registry with the given tools (used by tests of higher layers).
@@ -33,7 +33,7 @@ impl Registry {
 
 impl Default for Registry {
     fn default() -> Self {
-        Self::new()
+        Self::new(&ToolsConfig::default())
     }
 }
 
@@ -42,17 +42,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn lists_and_finds_md_to_pdf() {
-        let registry = Registry::new();
+    fn lists_and_finds_both_tools() {
+        let registry = Registry::default();
         let ids: Vec<String> = registry.descriptors().into_iter().map(|d| d.id).collect();
-        assert_eq!(ids, vec!["md_to_pdf".to_string()]);
+        assert_eq!(ids, vec!["md_to_pdf".to_string(), "pdf_to_md".to_string()]);
+        assert!(registry.get("pdf_to_md").is_some());
         assert!(registry.get("md_to_pdf").is_some());
         assert!(registry.get("nope").is_none());
     }
 
     #[test]
     fn descriptor_ids_are_unique() {
-        let ids: Vec<String> = Registry::new().descriptors().into_iter().map(|d| d.id).collect();
+        let ids: Vec<String> = Registry::default().descriptors().into_iter().map(|d| d.id).collect();
         let mut sorted = ids.clone();
         sorted.sort();
         sorted.dedup();

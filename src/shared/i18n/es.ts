@@ -7,6 +7,12 @@ export const es: Record<string, string> = {
   "tool.mdToPdf.name": "Markdown → PDF",
   "tool.mdToPdf.description": "Convierte ficheros Markdown en PDF con la misma tipografía en cualquier equipo.",
 
+  "tool.pdfToMd.name": "PDF → Markdown (diapositivas)",
+  "tool.pdfToMd.description": "Convierte un PDF en Markdown, una sección por página: el título de cada diapositiva y sus viñetas.",
+
+  "option.firstPage": "Primera página (0 = desde el principio)",
+  "option.lastPage": "Última página (0 = hasta el final)",
+  "option.removeHeadersFooters": "Quitar pies y números repetidos",
   "option.paper": "Tamaño de papel",
   "paper.a4": "A4",
   "paper.letter": "Carta (Letter)",
@@ -47,5 +53,7 @@ export const es: Record<string, string> = {
   "warning.imageMissing": "No se encontró la imagen: {detail}",
   "warning.imageUnsupported": "Formato de imagen no admitido: {detail}",
   "warning.imageRemoteSkipped": "Imagen remota omitida (todo se procesa en local): {detail}",
+  "warning.emptySlide": "Página {page} sin texto utilizable: se ha omitido.",
+  "warning.portraitPages": "La mayoría de las páginas son verticales ({detail}): este modo está pensado para diapositivas y un documento de apuntes puede salir mal.",
   "warning.htmlIgnored": "HTML ignorado: {detail}",
 };

@@ -45,7 +45,7 @@ pub struct OptionSpec {
 #[ts(export)]
 pub enum OptionKind {
     Choice { choices: Vec<OptionChoice>, default: String },
-    Number { min: f64, max: f64, default: f64 },
+    Number { min: f64, max: f64, default: f64, step: f64 },
     Bool { default: bool },
 }
 

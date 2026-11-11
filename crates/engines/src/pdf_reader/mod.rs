@@ -8,8 +8,10 @@ pub mod glyphs;
 pub mod lines;
 pub mod pdfium;
 pub mod slides;
+#[doc(hidden)]
+pub mod testing;
 
-pub use glyphs::{Glyph, PageGlyphs, extract_pages};
+pub use glyphs::{Glyph, PageGlyphs, extract_pages, extract_pages_with};
 pub use lines::{Line, PageLines, group_lines};
 pub use pdfium::{PdfSource, PdfiumLocation, with_document};
 

@@ -82,6 +82,19 @@ pub fn extract_pages(
     first: u32,
     last: u32,
 ) -> Result<Vec<PageGlyphs>, ConversionError> {
+    extract_pages_with(location, source, first, last, &|_, _| true)
+}
+
+/// Like [`extract_pages`], calling `keep_going(pages_read, pages_to_read)` before each page.
+/// Returning `false` stops the work with `Cancelled`, so a long document can be cancelled
+/// (and its progress shown) between pages.
+pub fn extract_pages_with(
+    location: &PdfiumLocation,
+    source: PdfSource<'_>,
+    first: u32,
+    last: u32,
+    keep_going: &dyn Fn(u32, u32) -> bool,
+) -> Result<Vec<PageGlyphs>, ConversionError> {
     with_document(location, source, |document| {
         let total = document.pages().len() as u32;
         if total == 0 {
@@ -99,6 +112,9 @@ pub fn extract_pages(
 
         // Only the requested pages are loaded.
         for number in first..=end {
+            if !keep_going(pages.len() as u32, end - first + 1) {
+                return Err(ConversionError::Cancelled);
+            }
             let page = document
                 .pages()
                 .get((number - 1) as PdfPageIndex)
@@ -243,6 +259,27 @@ mod tests {
         // A last page beyond the end is clamped, not an error.
         let tail = extract_pages(&location, PdfSource::Bytes(&pdf), 2, 999).unwrap();
         assert_eq!(tail.len(), all.len() - 1);
+    }
+
+    #[test]
+    fn extraction_can_be_stopped_between_pages_and_reports_progress() {
+        use std::cell::RefCell;
+        let Some(location) = test_support::pdfium() else { return };
+        let pdf = long_pdf();
+        let calls = RefCell::new(Vec::new());
+
+        // stop before the third page
+        let result = extract_pages_with(&location, PdfSource::Bytes(&pdf), 1, 0, &|read, total| {
+            calls.borrow_mut().push((read, total));
+            read < 2
+        });
+
+        assert_eq!(result, Err(ConversionError::Cancelled));
+        let calls = calls.into_inner();
+        assert_eq!(calls.len(), 3, "asked before pages 1, 2 and 3: {calls:?}");
+        assert_eq!(calls[0].0, 0);
+        assert_eq!(calls[2].0, 2);
+        assert!(calls.iter().all(|(_, total)| *total >= 3));
     }
 
     #[test]
