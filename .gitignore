@@ -37,3 +37,9 @@ fixtures/md-sample/*.pdf
 
 # PDFium binaries downloaded by scripts/get-pdfium (Phase 2)
 /pdfium/
+
+# Output of manual conversions of the PDF fixtures (the golden files stay tracked)
+fixtures/pdf/*.md
+!fixtures/pdf/*.expected.md
+!fixtures/pdf/README.md
+fixtures/pdf/*_images/
