@@ -1,7 +1,8 @@
 {
   "bundle": {
     "macOS": {
-      "frameworks": ["../pdfium/mac-univ/lib/libpdfium.dylib"]
+      "frameworks": ["../pdfium/mac-univ/lib/libpdfium.dylib"],
+      "hardenedRuntime": false
     }
   }
 }

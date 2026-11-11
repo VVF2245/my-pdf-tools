@@ -119,7 +119,10 @@ jobs:
           cp -R pdfium/mac-univ/licenses "$out/licenses/pdfium-third-party"
           codesign --verify --deep --strict --verbose=2 "$out/my-pdf-tools.app"
           # An app signed with the hardened runtime refuses to load a library signed by
-          # someone else. Ours is ad-hoc signed without it: fail if that ever changes.
+          # someone else. Tauri turns it on by default, so src-tauri/ci/macos-pdfium.conf.json
+          # turns it off (it only matters for notarized apps, which this one is not): fail if
+          # it ever comes back. A notarized build would need it on plus the entitlement
+          # com.apple.security.cs.disable-library-validation, or the library signed by us.
           codesign --display --verbose=4 "$out/my-pdf-tools.app" 2>&1 | tee signature.txt
           if grep -q "flags=.*runtime" signature.txt; then
             echo "hardened runtime is on: libpdfium.dylib would not load"; exit 1
