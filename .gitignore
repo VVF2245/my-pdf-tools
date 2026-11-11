@@ -34,3 +34,6 @@ src-tauri/gen/
 
 # Output of manual conversions of the fixtures
 fixtures/md-sample/*.pdf
+
+# PDFium binaries downloaded by scripts/get-pdfium (Phase 2)
+/pdfium/
