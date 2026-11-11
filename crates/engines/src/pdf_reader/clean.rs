@@ -185,7 +185,7 @@ pub enum MarginBands {
 }
 
 /// The font size most glyphs are set in (size rounded to 0.1 pt), or 0 without text.
-fn body_size(pages: &[PageLines]) -> f32 {
+pub(crate) fn body_size(pages: &[PageLines]) -> f32 {
     let mut glyphs_by_size: BTreeMap<i32, usize> = BTreeMap::new();
     for line in pages.iter().flat_map(|p| &p.lines) {
         *glyphs_by_size.entry((line.size * 10.0).round() as i32).or_default() += line.glyphs.len();

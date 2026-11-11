@@ -29,7 +29,7 @@ fn sample_markdown_matches_golden_ir() {
     actual.push('\n');
 
     let golden = dir.join("sample.document.json");
-    if std::env::var_os("UPDATE_GOLDEN").is_some() {
+    if std::env::var("UPDATE_GOLDEN").is_ok_and(|v| !v.is_empty() && v != "0") {
         std::fs::write(&golden, &actual).unwrap();
     }
     let expected = std::fs::read_to_string(&golden)

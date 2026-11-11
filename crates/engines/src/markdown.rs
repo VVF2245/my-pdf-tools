@@ -45,9 +45,22 @@ struct Reader<'a> {
 
 fn flush(pending: &mut Vec<Inline>, imgs: &mut Vec<Block>, out: &mut Vec<Block>) {
     if !pending.is_empty() {
-        out.push(Block::new(BlockKind::Paragraph(std::mem::take(pending))));
+        out.push(Block::new(BlockKind::Paragraph(merge_text(std::mem::take(pending)))));
     }
     out.append(imgs);
+}
+
+/// Joins neighbouring `Text` nodes: the parser splits text at every escape (`\*`) or
+/// special character, which would make equal documents compare different.
+fn merge_text(inlines: Vec<Inline>) -> Vec<Inline> {
+    let mut out: Vec<Inline> = Vec::with_capacity(inlines.len());
+    for inline in inlines {
+        match (out.last_mut(), inline) {
+            (Some(Inline::Text(previous)), Inline::Text(next)) => previous.push_str(&next),
+            (_, other) => out.push(other),
+        }
+    }
+    out
 }
 
 fn heading_level(level: HeadingLevel) -> u8 {
@@ -239,7 +252,7 @@ impl<'a> Reader<'a> {
             }
             self.inline_event(ev, &mut out, imgs);
         }
-        out
+        merge_text(out)
     }
 
     fn inline_event(&mut self, ev: Event<'a>, out: &mut Vec<Inline>, imgs: &mut Vec<Block>) {

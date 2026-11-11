@@ -7,6 +7,7 @@ pub mod clean;
 pub mod glyphs;
 pub mod lines;
 pub mod pdfium;
+pub mod slides;
 
 pub use glyphs::{Glyph, PageGlyphs, extract_pages};
 pub use lines::{Line, PageLines, group_lines};

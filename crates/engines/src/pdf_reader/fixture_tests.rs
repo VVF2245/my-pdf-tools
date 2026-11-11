@@ -93,6 +93,30 @@ fn slides_are_landscape_with_the_title_on_top_and_a_repeated_footer() {
 }
 
 #[test]
+fn bullets_that_wrap_in_a_real_pdf_have_a_hanging_indent_and_are_joined() {
+    use crate::pdf_reader::slides::{SlideOptions, slides_to_document};
+    use mpt_core::{BlockKind, Inline};
+
+    let Some(pages) = read("slides.pdf") else { return };
+    let slide = &pages[2];
+    // the long bullet takes three lines and its nested bullet three more: the PDF really wraps
+    assert_eq!(slide.lines.len(), 11, "{:?}", texts(slide));
+    let wrapped = &slide.lines[5];
+    assert!(wrapped.left > slide.lines[4].left, "wrapped lines are indented under the text");
+
+    let (document, _) = slides_to_document(&pages, SlideOptions::default());
+    let BlockKind::List { items, .. } = &document.blocks.iter().filter(|b| b.page == Some(3)).nth(1).unwrap().kind
+    else {
+        panic!("slide 3 has a list")
+    };
+    assert_eq!(items.len(), 4, "wrapped lines did not create extra items");
+    let BlockKind::Paragraph(text) = &items[3].blocks[0].kind else { panic!() };
+    let Inline::Text(text) = &text[0] else { panic!() };
+    assert!(text.starts_with("Una relación") && text.ends_with("dentro de la misma tabla"), "{text}");
+    assert_eq!(items[3].blocks.len(), 2, "the nested bullet hangs from the long one");
+}
+
+#[test]
 fn a_title_repeated_on_several_slides_is_kept() {
     let Some(pages) = read("slides.pdf") else { return };
     let repeated: Vec<&PageLines> =
@@ -177,4 +201,23 @@ fn table_cells_on_one_baseline_become_one_spaced_line() {
     let row = page.lines.iter().find(|l| l.text.starts_with("Alfa")).unwrap();
     let paragraph = page.lines.iter().find(|l| l.text.starts_with("La siguiente")).unwrap();
     assert!(row.left > paragraph.left);
+}
+
+#[test]
+fn slides_convert_to_the_golden_markdown() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::slides::{SlideOptions, slides_to_document};
+
+    let Some(pages) = read("slides.pdf") else { return };
+    let (document, warnings) = slides_to_document(&pages, SlideOptions::default());
+    assert!(warnings.is_empty(), "{warnings:?}");
+    let actual = to_markdown(&document, "slides_images").text;
+
+    // To accept an intended change: UPDATE_GOLDEN=1 cargo test -p mpt-engines slides_convert
+    let golden = fixtures_dir().join("slides.expected.md");
+    if std::env::var("UPDATE_GOLDEN").is_ok_and(|v| !v.is_empty() && v != "0") {
+        std::fs::write(&golden, &actual).unwrap();
+    }
+    let expected = std::fs::read_to_string(&golden).expect("golden missing: run with UPDATE_GOLDEN=1");
+    assert_eq!(expected.replace("\r\n", "\n"), actual);
 }

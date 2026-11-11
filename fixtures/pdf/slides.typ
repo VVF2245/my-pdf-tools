@@ -34,6 +34,8 @@ Curso de ejemplo para pruebas
   - Datos en tablas con filas y columnas
   - Cada fila se identifica con una clave primaria
   - Las tablas se relacionan mediante claves ajenas
+  - Una relación es un conjunto de filas sin orden ni duplicados, y cada columna tiene un nombre y un tipo de dato fijo que todas las filas deben respetar sin excepción alguna dentro de la misma tabla
+    - Esto permite comprobar de forma automática que los datos guardados son coherentes, y rechazar los que no cumplan las reglas definidas por quien diseñó la base de datos
 ]
 
 #slide("Consultas con SQL")[
