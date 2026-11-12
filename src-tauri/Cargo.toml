@@ -25,5 +25,6 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 mpt-core = { path = "../crates/core" }
 mpt-tools = { path = "../crates/tools" }
+tauri-plugin-dialog = "2"
 
 

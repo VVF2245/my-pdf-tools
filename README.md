@@ -8,7 +8,7 @@ A local desktop app for working with PDF files. Everything runs on your own mach
 
 The first version (V1) focuses on converting between PDF and Markdown:
 
-- **Markdown → PDF** *(available)*: drag `.md` files onto the window, choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
+- **Markdown → PDF** *(available)*: drag `.md` files onto the window (or pick them with the "Buscar ficheros…" button), choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
 - **PDF → Markdown** *(planned)*, with two modes:
   - *Notes*: flowing text from digital PDFs (headings, lists, code, tables).
   - *Slides*: one section per slide, nested bullet lists, images for diagrams.
@@ -50,6 +50,12 @@ Run the tests (this also regenerates the TypeScript types under `src/shared/ipc/
 
 ```bash
 cargo test --workspace
+```
+
+Frontend tests (Node's built-in runner, no extra dependency; they are not type-checked, because that would need `@types/node`):
+
+```bash
+npm test
 ```
 
 Run the app:
