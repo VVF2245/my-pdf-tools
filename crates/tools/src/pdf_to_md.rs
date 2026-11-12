@@ -88,6 +88,7 @@ impl Tool for PdfToMd {
         let page = |key: &str, label: &str| OptionSpec {
             key: key.to_string(),
             label: label.to_string(),
+            help: Some(format!("{label}.help")),
             kind: OptionKind::Number { min: 0.0, max: 100_000.0, default: 0.0, step: 1.0 },
         };
         ToolDescriptor {
@@ -100,6 +101,7 @@ impl Tool for PdfToMd {
                 OptionSpec {
                     key: "mode".to_string(),
                     label: "option.mode".to_string(),
+                    help: Some("option.mode.help".to_string()),
                     kind: OptionKind::Choice {
                         choices: ["auto", "notes", "slides"]
                             .iter()
@@ -113,6 +115,7 @@ impl Tool for PdfToMd {
                 OptionSpec {
                     key: "removeHeadersFooters".to_string(),
                     label: "option.removeHeadersFooters".to_string(),
+                    help: Some("option.removeHeadersFooters.help".to_string()),
                     kind: OptionKind::Bool { default: true },
                 },
             ],

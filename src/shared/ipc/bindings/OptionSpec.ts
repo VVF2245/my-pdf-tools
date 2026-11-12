@@ -9,4 +9,8 @@ key: string,
 /**
  * Label identifier the UI translates (not display text).
  */
-label: string, kind: OptionKind, };
+label: string, 
+/**
+ * Translation key of a short explanation shown under the control.
+ */
+help: string | null, kind: OptionKind, };

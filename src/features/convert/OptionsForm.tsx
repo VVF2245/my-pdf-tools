@@ -26,44 +26,54 @@ export function OptionsForm({ specs, values, onChange }: Props) {
         const id = `opt-${spec.key}`;
         const { kind } = spec;
         return (
-          <label key={spec.key} htmlFor={id} className="option">
-            <span>{t(spec.label)}</span>
-            {kind.type === "choice" && (
-              <select
-                id={id}
-                value={String(values[spec.key])}
-                onChange={(e) => onChange(spec.key, e.target.value)}
-              >
-                {kind.choices.map((choice) => (
-                  <option key={choice.value} value={choice.value}>
-                    {t(choice.label)}
-                  </option>
-                ))}
-              </select>
+          <div key={spec.key} className="option-block">
+            <label htmlFor={id} className="option">
+              <span>{t(spec.label)}</span>
+              {kind.type === "choice" && (
+                <select
+                  id={id}
+                  aria-describedby={spec.help ? `${id}-help` : undefined}
+                  value={String(values[spec.key])}
+                  onChange={(e) => onChange(spec.key, e.target.value)}
+                >
+                  {kind.choices.map((choice) => (
+                    <option key={choice.value} value={choice.value}>
+                      {t(choice.label)}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {kind.type === "number" && (
+                <input
+                  id={id}
+                  aria-describedby={spec.help ? `${id}-help` : undefined}
+                  type="number"
+                  min={kind.min}
+                  max={kind.max}
+                  step={kind.step}
+                  value={Number(values[spec.key])}
+                  onChange={(e) => {
+                    const n = e.target.valueAsNumber;
+                    if (!Number.isNaN(n)) onChange(spec.key, n);
+                  }}
+                />
+              )}
+              {kind.type === "bool" && (
+                <input
+                  id={id}
+                  aria-describedby={spec.help ? `${id}-help` : undefined}
+                  type="checkbox"
+                  checked={Boolean(values[spec.key])}
+                  onChange={(e) => onChange(spec.key, e.target.checked)}
+                />
+              )}
+            </label>
+            {spec.help && (
+              <p id={`${id}-help`} className="option-help">
+                {t(spec.help)}
+              </p>
             )}
-            {kind.type === "number" && (
-              <input
-                id={id}
-                type="number"
-                min={kind.min}
-                max={kind.max}
-                step={kind.step}
-                value={Number(values[spec.key])}
-                onChange={(e) => {
-                  const n = e.target.valueAsNumber;
-                  if (!Number.isNaN(n)) onChange(spec.key, n);
-                }}
-              />
-            )}
-            {kind.type === "bool" && (
-              <input
-                id={id}
-                type="checkbox"
-                checked={Boolean(values[spec.key])}
-                onChange={(e) => onChange(spec.key, e.target.checked)}
-              />
-            )}
-          </label>
+          </div>
         );
       })}
     </fieldset>
