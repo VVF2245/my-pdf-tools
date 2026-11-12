@@ -2,19 +2,46 @@ name: ci
 
 # Tests and builds on Windows and macOS. It only uploads workflow artifacts;
 # it does NOT create a release (releases come in Phase 4).
+#
+# PDFium (the PDF reading engine) is a shared library that is not part of the crates:
+# it is downloaded with a pinned checksum, used by the tests, and shipped next to the app.
 on:
   push:
     branches: [main, "feat/**", "spikes/**"]
   pull_request:
   workflow_dispatch:
 
+# A newer commit on the same branch makes the older run pointless.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    # A pull request from this repository is already covered by the push run of its branch:
+    # run only the PRs that come from forks.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        include:
+          - os: windows-latest
+            pdfium: win-x64
+            pdfium_lib: bin
+            # the .exe only: it is shipped in a folder with pdfium.dll (see below)
+            tauri_args: "--no-bundle"
+          - os: macos-latest
+            pdfium: mac-univ
+            pdfium_lib: lib
+            # The .app only, and only on arm64 (the runner's architecture): an Intel Mac
+            # cannot open it, although the PDFium library itself is universal.
+            # libpdfium.dylib goes inside the .app through a CI-only config, so a normal
+            # build on a Mac does not need the library to be downloaded.
+            tauri_args: "--bundles app --config src-tauri/ci/macos-pdfium.conf.json"
     runs-on: ${{ matrix.os }}
+    env:
+      # where the tests look for PDFium
+      PDFIUM_DIR: ${{ github.workspace }}/pdfium/${{ matrix.pdfium }}/${{ matrix.pdfium_lib }}
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +59,19 @@ jobs:
       - name: Frontend tests
         run: npm test
 
+      # The cache key contains the hash of the script, which pins the PDFium version and checksum.
+      - name: Cache PDFium
+        id: pdfium-cache
+        uses: actions/cache@v4
+        with:
+          path: pdfium/${{ matrix.pdfium }}
+          key: pdfium-${{ matrix.pdfium }}-${{ hashFiles('scripts/get-pdfium.ps1') }}
+
+      - name: Download PDFium (checksum verified by the script)
+        if: steps.pdfium-cache.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: ./scripts/get-pdfium.ps1 -Platform ${{ matrix.pdfium }}
+
       - name: Rust tests
         run: cargo test --workspace
 
@@ -43,31 +83,90 @@ jobs:
       - name: Type-check the frontend
         run: npm run build
 
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
+      - name: Build the app
+        run: npx tauri build ${{ matrix.tauri_args }}
         env:
           # macOS: ad-hoc signature (no Apple Developer account). Ignored on Windows.
           APPLE_SIGNING_IDENTITY: "-"
 
-      # macOS: zip with ditto (keeps permissions and symlinks, unlike generic zip tools).
-      - name: Zip macOS app with ditto
+      # Windows: the exe needs pdfium.dll next to it, so it ships as a folder.
+      - name: Assemble the Windows folder
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $out = "my-pdf-tools-windows"
+          New-Item -ItemType Directory $out | Out-Null
+          Copy-Item target/release/my-pdf-tools.exe $out
+          Copy-Item pdfium/win-x64/bin/pdfium.dll $out
+          Copy-Item LICENSE, NOTICE $out
+          New-Item -ItemType Directory "$out/licenses" | Out-Null
+          Copy-Item licenses/* "$out/licenses/"
+          Copy-Item pdfium/win-x64/LICENSE "$out/licenses/PDFium-LICENSE.txt"
+          Copy-Item pdfium/win-x64/licenses "$out/licenses/pdfium-third-party" -Recurse
+          Get-ChildItem $out -Recurse | Select-Object FullName
+
+      # macOS: the library was bundled (and signed) inside the .app by Tauri. Nothing may be
+      # added inside the .app afterwards, or the signature breaks: licenses go beside it.
+      - name: Assemble the macOS folder
         if: runner.os == 'macOS'
         run: |
-          ditto -c -k --sequesterRsrc --keepParent \
-            target/release/bundle/macos/my-pdf-tools.app \
-            my-pdf-tools-macos.zip
+          set -euo pipefail
+          out=my-pdf-tools-macos
+          mkdir -p "$out/licenses"
+          ditto target/release/bundle/macos/my-pdf-tools.app "$out/my-pdf-tools.app"
+          test -f "$out/my-pdf-tools.app/Contents/Frameworks/libpdfium.dylib" \
+            || { echo "libpdfium.dylib is missing from the app"; exit 1; }
+          cp LICENSE NOTICE "$out/"
+          cp licenses/* "$out/licenses/"
+          cp pdfium/mac-univ/LICENSE "$out/licenses/PDFium-LICENSE.txt"
+          cp -R pdfium/mac-univ/licenses "$out/licenses/pdfium-third-party"
+          codesign --verify --deep --strict --verbose=2 "$out/my-pdf-tools.app"
+          # An app signed with the hardened runtime refuses to load a library signed by
+          # someone else. Tauri turns it on by default, so src-tauri/ci/macos-pdfium.conf.json
+          # turns it off (it only matters for notarized apps, which this one is not): fail if
+          # it ever comes back. A notarized build would need it on plus the entitlement
+          # com.apple.security.cs.disable-library-validation, or the library signed by us.
+          codesign --display --verbose=4 "$out/my-pdf-tools.app" 2>&1 | tee signature.txt
+          if grep -q "flags=.*runtime" signature.txt; then
+            echo "hardened runtime is on: libpdfium.dylib would not load"; exit 1
+          fi
+          codesign --display --verbose=2 "$out/my-pdf-tools.app/Contents/Frameworks/libpdfium.dylib" 2>&1 || true
+          # ditto keeps permissions and symlinks, unlike generic zip tools
+          ditto -c -k --sequesterRsrc --keepParent "$out" my-pdf-tools-macos.zip
 
-      - name: Upload Windows artifacts
+      # Does a program laid out like the shipped app find PDFium by itself? `smoke` converts a
+      # PDF with the default lookup, with PDFIUM_DIR unset. (The macOS check runs on a copy of
+      # the .app: adding a file to the real one would break its signature.)
+      - name: Smoke test the packaged layout (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build -p mpt-tools --example smoke
+          New-Item -ItemType Directory smoke-check | Out-Null
+          Copy-Item target/debug/examples/smoke.exe smoke-check
+          Copy-Item my-pdf-tools-windows/pdfium.dll smoke-check
+          Remove-Item Env:PDFIUM_DIR
+          & ./smoke-check/smoke.exe fixtures/pdf/slides.pdf
+          if ($LASTEXITCODE -ne 0) { throw "the packaged layout cannot read a PDF" }
+
+      - name: Smoke test the packaged layout (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          cargo build -p mpt-tools --example smoke
+          mkdir smoke-check
+          ditto my-pdf-tools-macos/my-pdf-tools.app smoke-check/my-pdf-tools.app
+          cp target/debug/examples/smoke smoke-check/my-pdf-tools.app/Contents/MacOS/smoke
+          env -u PDFIUM_DIR smoke-check/my-pdf-tools.app/Contents/MacOS/smoke fixtures/pdf/slides.pdf
+
+      - name: Upload Windows folder
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
           name: my-pdf-tools-windows
-          path: |
-            target/release/my-pdf-tools.exe
-            target/release/bundle/nsis/*.exe
-            target/release/bundle/msi/*.msi
+          path: my-pdf-tools-windows
 
-      - name: Upload macOS artifact
+      - name: Upload macOS zip
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:

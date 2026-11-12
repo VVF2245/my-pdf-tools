@@ -47,7 +47,7 @@ export function OptionsForm({ specs, values, onChange }: Props) {
                 type="number"
                 min={kind.min}
                 max={kind.max}
-                step={0.1}
+                step={kind.step}
                 value={Number(values[spec.key])}
                 onChange={(e) => {
                   const n = e.target.valueAsNumber;

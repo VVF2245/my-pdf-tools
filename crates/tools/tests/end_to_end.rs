@@ -19,7 +19,7 @@ fn convert(out_dir: &Path, options: BTreeMap<String, OptionValue>) -> Vec<u8> {
         output_dir: Some(out_dir.to_string_lossy().into_owned()),
         options,
     };
-    let tool = Registry::new().get("md_to_pdf").expect("tool registered");
+    let tool = Registry::default().get("md_to_pdf").expect("tool registered");
     let outcome = tool.run(&request, &NoProgress, &CancelToken::new()).unwrap();
     assert!(outcome.report.warnings.is_empty(), "{:?}", outcome.report.warnings);
     assert_eq!(outcome.outputs.len(), 1);

@@ -76,25 +76,7 @@
             }
           },
           {
-            "Text": ". Caracteres especiales: # $ * _ @ "
-          },
-          {
-            "Text": "<"
-          },
-          {
-            "Text": " > "
-          },
-          {
-            "Text": "["
-          },
-          {
-            "Text": " "
-          },
-          {
-            "Text": "]"
-          },
-          {
-            "Text": " \\ \" y acentos: áéíóú ñ ¿qué?"
+            "Text": ". Caracteres especiales: # $ * _ @ < > [ ] \\ \" y acentos: áéíóú ñ ¿qué?"
           }
         ]
       },

@@ -13,6 +13,33 @@ You should have received a copy of the GNU Affero General Public License along
 with this program (see the LICENSE file). If not, see
 <https://www.gnu.org/licenses/>.
 
-Third-party components (Typst, pulldown-cmark, Tauri, React and their
-dependencies, plus the bundled fonts) keep their own licenses. A complete list
-will be shipped with the release builds.
+Third-party components
+----------------------
+
+my-pdf-tools includes or loads the components below, each under its own license.
+The license texts shipped with the program are in the `licenses/` folder.
+
+  PDFium (the PDF reading engine, loaded as pdfium.dll / libpdfium.dylib)
+      BSD-3-Clause. Prebuilt binaries from bblanchon/pdfium-binaries (MIT).
+      Texts: licenses/PDFium-LICENSE.txt and licenses/pdfium-third-party/.
+
+  Typst (typst, typst-pdf, typst-layout) -- PDF typesetting engine
+      Apache-2.0.
+
+  typst-assets and the fonts it bundles (Libertinus Serif, New Computer Modern,
+  DejaVu Sans Mono, and others)
+      Apache-2.0 for the crate; SIL Open Font License 1.1 and the DejaVu font
+      license for the fonts. Texts: licenses/typst-assets-LICENSE.txt and
+      licenses/typst-assets-NOTICE.txt.
+
+  Tauri 2, tauri-plugin-dialog              Apache-2.0 OR MIT
+  rfd (native file dialogs, used by the plugin)
+                                            MIT
+  pdfium-render, serde, serde_json,
+  thiserror, image                          MIT OR Apache-2.0
+  pulldown-cmark, ts-rs                     MIT
+  unicode-normalization                     (MIT OR Apache-2.0) AND Unicode-3.0
+  React and the other npm dependencies      MIT (see package-lock.json)
+
+This list covers the direct dependencies. The complete list, with the license text of
+every transitive dependency, will be generated for the release builds.

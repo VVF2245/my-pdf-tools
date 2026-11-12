@@ -6,6 +6,7 @@ mod world;
 use std::collections::HashMap;
 
 use mpt_core::{ConversionError, Document};
+use typst::diag::SourceDiagnostic;
 use typst::foundations::Bytes;
 use typst_layout::PagedDocument;
 
@@ -43,30 +44,35 @@ impl Default for PdfOptions {
 /// Renders `doc` to PDF bytes. The output is reproducible: no clock, no system fonts.
 pub fn render_pdf(doc: &Document, options: &PdfOptions) -> Result<Vec<u8>, ConversionError> {
     let markup = to_typst(doc, options);
-    let files: HashMap<String, Bytes> = doc
+    let files = doc
         .assets
         .iter()
-        .map(|a| (markup::asset_path(a), Bytes::new(a.data.clone())))
+        .map(|a| (markup::asset_path(a), a.data.clone()))
         .collect();
-    let world = world::MemoryWorld::new(markup, files);
+    compile_typst(&markup, files)
+}
+
+/// Compiles Typst source to PDF bytes. `files` maps a path without leading slash
+/// (e.g. `assets/img-1.png`) to the bytes the source can load.
+///
+/// **Not part of the supported API.** It exists so the test fixtures can be written
+/// directly in Typst (slides, two columns...). Typst is a scripting language: the source
+/// must be trusted, never user input (a loop in it would run without any limit).
+#[doc(hidden)]
+pub fn compile_typst(source: &str, files: HashMap<String, Vec<u8>>) -> Result<Vec<u8>, ConversionError> {
+    let files = files.into_iter().map(|(path, data)| (path, Bytes::new(data))).collect();
+    let world = world::MemoryWorld::new(source.to_string(), files);
 
     let warned = typst::compile::<PagedDocument>(&world);
-    let paged = warned.output.map_err(|errors| ConversionError::Internal {
-        message: errors
-            .iter()
-            .map(|e| e.message.to_string())
-            .collect::<Vec<_>>()
-            .join("; "),
-    })?;
-    typst_pdf::pdf(&paged, &typst_pdf::PdfOptions::default()).map_err(|errors| {
-        ConversionError::Internal {
-            message: errors
-                .iter()
-                .map(|e| e.message.to_string())
-                .collect::<Vec<_>>()
-                .join("; "),
-        }
-    })
+    let paged = warned.output.map_err(|errors| internal_error(&errors))?;
+    typst_pdf::pdf(&paged, &typst_pdf::PdfOptions::default()).map_err(|errors| internal_error(&errors))
+}
+
+/// One `Internal` error carrying every diagnostic message.
+fn internal_error(diagnostics: &[SourceDiagnostic]) -> ConversionError {
+    ConversionError::Internal {
+        message: diagnostics.iter().map(|d| d.message.to_string()).collect::<Vec<_>>().join("; "),
+    }
 }
 
 #[cfg(test)]

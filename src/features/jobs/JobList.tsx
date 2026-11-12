@@ -46,7 +46,7 @@ function JobItem({ job }: { job: Job }) {
               </summary>
               <ul>
                 {status.outcome.report.warnings.map((w, i) => (
-                  <li key={i}>{t(`warning.${w.code}`, { detail: w.detail })}</li>
+                  <li key={i}>{t(`warning.${w.code}`, { detail: w.detail, page: w.page ?? "" })}</li>
                 ))}
               </ul>
             </details>
