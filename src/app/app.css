@@ -108,6 +108,7 @@ button.link {
 .option input[type="number"], .option select { width: 9em; }
 .option-block { padding: 2px 0 6px; }
 .option-block .option { padding-bottom: 2px; }
+.output-folder { margin-top: 12px; overflow-wrap: anywhere; }
 .option-help { margin: 0; font-size: 0.87em; color: var(--muted); }
 
 .job {

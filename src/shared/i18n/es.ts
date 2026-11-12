@@ -52,6 +52,16 @@ export const es: Record<string, string> = {
   "jobs.cancelled": "Cancelado",
   "jobs.cancel": "Cancelar",
   "jobs.output": "Guardado en",
+  "jobs.reveal": "Mostrar en la carpeta",
+
+  "output.saveIn": "Guardar en",
+  "output.change": "Cambiar…",
+  "output.useDownloads": "Usar Descargas",
+  "output.pickTitle": "Carpeta donde guardar los ficheros convertidos",
+  "output.gone": "La carpeta guardada ({path}) ya no existe: se usará Descargas.",
+  "output.revealFailed": "No se pudo mostrar el fichero (¿se ha movido o borrado?)",
+  "output.pickFailed": "No se pudo abrir el selector de carpetas",
+  "output.nextToOriginal": "No se ha encontrado la carpeta Descargas: cada fichero se guardará junto a su original.",
   "jobs.warnings": "Avisos",
 
   "error.encrypted": "El documento está cifrado.",

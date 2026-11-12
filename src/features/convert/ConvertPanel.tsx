@@ -12,6 +12,7 @@ import { baseName, mergeFiles, splitAccepted } from "../../shared/files";
 import { t } from "../../shared/i18n";
 import { errorMessage } from "../jobs/JobList";
 import { OptionsForm, defaultValues, type OptionValues } from "./OptionsForm";
+import { useOutputFolder } from "./OutputFolder";
 
 interface Props {
   tool: ToolDescriptor;
@@ -25,6 +26,7 @@ export function ConvertPanel({ tool, onJobs }: Props) {
   const [hovering, setHovering] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [browsing, setBrowsing] = useState(false);
+  const output = useOutputFolder();
 
   // The drop handler must always see the current tool without re-subscribing.
   const accepted = useRef(tool.inputs);
@@ -83,7 +85,7 @@ export function ConvertPanel({ tool, onJobs }: Props) {
       const jobs = await startJobs({
         toolId: tool.id,
         inputs: files,
-        outputDir: null,
+        outputDir: output.dir,
         options: values as Record<string, OptionValue>,
       });
       onJobs(jobs);
@@ -137,7 +139,14 @@ export function ConvertPanel({ tool, onJobs }: Props) {
         onChange={(key, value) => setValues((current) => ({ ...current, [key]: value }))}
       />
 
-      <button type="button" className="primary" disabled={files.length === 0} onClick={convert}>
+      {output.control}
+
+      <button
+        type="button"
+        className="primary"
+        disabled={files.length === 0 || !output.ready}
+        onClick={convert}
+      >
         {t("convert.start")}
       </button>
     </section>

@@ -54,6 +54,21 @@ export async function pickFiles(extensions: string[], filterName: string): Promi
   return chosen ?? [];
 }
 
+/** Downloads folder, or `null` when the system does not know it. */
+export const defaultOutputDir = () => invoke<string | null>("default_output_dir");
+
+/** Whether `path` is an existing folder. */
+export const folderExists = (path: string) => invoke<boolean>("folder_exists", { path });
+
+/** Opens the file manager with the file selected. */
+export const revealInFolder = (path: string) => invoke<void>("reveal_in_folder", { path });
+
+/** Opens the system folder dialog; `null` if the user cancelled. */
+export async function pickFolder(title: string): Promise<string | null> {
+  const chosen = await open({ directory: true, multiple: false, title });
+  return chosen ?? null;
+}
+
 /** Commands reject with the serialized `ConversionError`. */
 export function toConversionError(reason: unknown): ConversionError {
   if (typeof reason === "object" && reason !== null && "code" in reason) {

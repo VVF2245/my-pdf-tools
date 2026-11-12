@@ -1,4 +1,5 @@
-import { cancelJob, type ConversionError, type Job } from "../../shared/ipc";
+import { cancelJob, revealInFolder, type ConversionError, type Job } from "../../shared/ipc";
+import { useState } from "react";
 import { baseName } from "../../shared/files";
 import { t } from "../../shared/i18n";
 
@@ -11,6 +12,7 @@ function JobItem({ job }: { job: Job }) {
   const { status } = job;
   const running = status.state === "running";
   const cancellable = status.state === "queued" || running;
+  const [revealFailed, setRevealFailed] = useState(false);
 
   return (
     <li className={`job job-${status.state}`}>
@@ -36,9 +38,16 @@ function JobItem({ job }: { job: Job }) {
         <>
           {status.outcome.outputs.map((path) => (
             <p key={path} className="job-output">
-              {t("jobs.output")}: <code>{path}</code>
+              {t("jobs.output")}: <code>{path}</code>{" "}
+              <button type="button" className="link" onClick={() => {
+                  setRevealFailed(false);
+                  revealInFolder(path).catch(() => setRevealFailed(true));
+                }}>
+                {t("jobs.reveal")}
+              </button>
             </p>
           ))}
+          {revealFailed && <p className="job-error">{t("output.revealFailed")}</p>}
           {status.outcome.report.warnings.length > 0 && (
             <details className="job-warnings">
               <summary>
