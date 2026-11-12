@@ -1,7 +1,8 @@
-// The only module that talks to the Rust engine (invoke / events / drag and drop).
+// The only module that talks to the Rust engine (invoke / events / drag and drop / file dialog).
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { open } from "@tauri-apps/plugin-dialog";
 import type { ConversionError, ConversionRequest, Job, ToolDescriptor } from "./types";
 
 export type * from "./types";
@@ -39,6 +40,19 @@ export const onFileDrop = (
         break;
     }
   });
+
+/**
+ * Opens the system file dialog (several files allowed) filtered by `extensions` (lowercase,
+ * without the dot) and returns the chosen paths, or an empty list if the user cancelled.
+ * `filterName` is the already translated label of the filter.
+ */
+export async function pickFiles(extensions: string[], filterName: string): Promise<string[]> {
+  const chosen = await open({
+    multiple: true,
+    filters: [{ name: filterName, extensions }],
+  });
+  return chosen ?? [];
+}
 
 /** Commands reject with the serialized `ConversionError`. */
 export function toConversionError(reason: unknown): ConversionError {

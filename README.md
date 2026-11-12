@@ -8,7 +8,7 @@ A local desktop app for working with PDF files. Everything runs on your own mach
 
 The first version (V1) focuses on converting between PDF and Markdown:
 
-- **Markdown → PDF** *(available)*: drag `.md` files onto the window, choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
+- **Markdown → PDF** *(available)*: drag `.md` files onto the window (or pick them with the "Buscar ficheros…" button), choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
 - **PDF → Markdown**, with two modes:
   - *Slides* *(available)*: every page becomes a `##` section with the slide's title and its bullets as nested lists. Footers and slide numbers repeated on many slides are dropped, and you can convert a range of pages. Images of diagrams are not extracted yet.
   - *Notes* *(planned)*: flowing text from digital PDFs (headings, lists, code, tables).
@@ -68,6 +68,12 @@ Run the tests (this also regenerates the TypeScript types under `src/shared/ipc/
 cargo test --workspace
 ```
 
+Frontend tests (Node's built-in runner, no extra dependency; they are not type-checked, because that would need `@types/node`):
+
+```bash
+npm test
+```
+
 Golden files (expected output) are compared exactly. After an intended change, regenerate them and review the diff:
 
 ```bash
@@ -79,7 +85,7 @@ $env:UPDATE_GOLDEN = "1"; cargo test --workspace  # PowerShell
 Remove-Item Env:UPDATE_GOLDEN                      # then clear it
 ```
 
- The PDFs in `fixtures/pdf/` come from the `.typ` files next to them: edit those and run `cargo run -p mpt-engines --example gen_fixtures`.
+The PDFs in `fixtures/pdf/` come from the `.typ` files next to them: edit those and run `cargo run -p mpt-engines --example gen_fixtures`.
 
 Run the app:
 

@@ -21,6 +21,9 @@ export const es: Record<string, string> = {
 
   "convert.dropHint": "Arrastra aquí tus ficheros {extensions}",
   "convert.dropActive": "Suelta los ficheros para añadirlos",
+  "convert.browse": "Buscar ficheros…",
+  "convert.browseFailed": "No se pudo abrir el selector de ficheros",
+  "convert.fileTypes": "Ficheros admitidos",
   "convert.files": "Ficheros",
   "convert.noFiles": "Todavía no has añadido ningún fichero.",
   "convert.remove": "Quitar",

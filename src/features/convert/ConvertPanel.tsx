@@ -1,25 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import {
   onFileDrop,
+  pickFiles,
   startJobs,
   toConversionError,
   type Job,
   type OptionValue,
   type ToolDescriptor,
 } from "../../shared/ipc";
+import { baseName, mergeFiles, splitAccepted } from "../../shared/files";
 import { t } from "../../shared/i18n";
-import { baseName, errorMessage } from "../jobs/JobList";
+import { errorMessage } from "../jobs/JobList";
 import { OptionsForm, defaultValues, type OptionValues } from "./OptionsForm";
 
 interface Props {
   tool: ToolDescriptor;
   onJobs: (jobs: Job[]) => void;
-}
-
-function extensionOf(path: string): string {
-  const name = baseName(path);
-  const dot = name.lastIndexOf(".");
-  return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
 }
 
 /** Drop files, tweak the options, convert. Works for any tool through its descriptor. */
@@ -28,10 +24,40 @@ export function ConvertPanel({ tool, onJobs }: Props) {
   const [values, setValues] = useState<OptionValues>(() => defaultValues(tool.options));
   const [hovering, setHovering] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [browsing, setBrowsing] = useState(false);
 
   // The drop handler must always see the current tool without re-subscribing.
   const accepted = useRef(tool.inputs);
   accepted.current = tool.inputs;
+
+  /** Adds files from a drop or from the file dialog: same filter, same list, same notice. */
+  function addFiles(paths: string[]) {
+    const { ok, rejected } = splitAccepted(paths, accepted.current);
+    setFiles((current) => mergeFiles(current, ok));
+    setNotice(
+      rejected.length > 0
+        ? t("convert.rejected", {
+            extensions: accepted.current.map((e) => `.${e}`).join(", "),
+            names: rejected.map(baseName).join(", "),
+          })
+        : null,
+    );
+  }
+  const addFilesRef = useRef(addFiles);
+  addFilesRef.current = addFiles;
+
+  async function browse() {
+    // one dialog at a time: a second click before the window shows would open another
+    setBrowsing(true);
+    try {
+      const paths = await pickFiles(tool.inputs, t("convert.fileTypes"));
+      if (paths.length > 0) addFiles(paths); // an empty list means the user cancelled
+    } catch (reason) {
+      setNotice(`${t("convert.browseFailed")}: ${errorMessage(toConversionError(reason))}`);
+    } finally {
+      setBrowsing(false);
+    }
+  }
 
   useEffect(() => {
     setFiles([]);
@@ -42,22 +68,7 @@ export function ConvertPanel({ tool, onJobs }: Props) {
   useEffect(() => {
     let unlisten: (() => void) | undefined;
     let cancelled = false;
-    onFileDrop(
-      (paths) => {
-        const ok = paths.filter((p) => accepted.current.includes(extensionOf(p)));
-        const rejected = paths.filter((p) => !ok.includes(p));
-        setFiles((current) => [...current, ...ok.filter((p) => !current.includes(p))]);
-        setNotice(
-          rejected.length > 0
-            ? t("convert.rejected", {
-                extensions: accepted.current.map((e) => `.${e}`).join(", "),
-                names: rejected.map(baseName).join(", "),
-              })
-            : null,
-        );
-      },
-      setHovering,
-    ).then((fn) => {
+    onFileDrop((paths) => addFilesRef.current(paths), setHovering).then((fn) => {
       if (cancelled) fn();
       else unlisten = fn;
     });
@@ -92,6 +103,11 @@ export function ConvertPanel({ tool, onJobs }: Props) {
 
       <div className={hovering ? "dropzone hover" : "dropzone"}>
         {hovering ? t("convert.dropActive") : t("convert.dropHint", { extensions })}
+        <div>
+          <button type="button" onClick={browse} disabled={browsing}>
+            {t("convert.browse")}
+          </button>
+        </div>
       </div>
 
       <h3>{t("convert.files")}</h3>

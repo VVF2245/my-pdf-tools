@@ -32,7 +32,9 @@ The license texts shipped with the program are in the `licenses/` folder.
       license for the fonts. Texts: licenses/typst-assets-LICENSE.txt and
       licenses/typst-assets-NOTICE.txt.
 
-  Tauri 2                                   Apache-2.0 OR MIT
+  Tauri 2, tauri-plugin-dialog              Apache-2.0 OR MIT
+  rfd (native file dialogs, used by the plugin)
+                                            MIT
   pdfium-render, serde, serde_json,
   thiserror, image                          MIT OR Apache-2.0
   pulldown-cmark, ts-rs                     MIT

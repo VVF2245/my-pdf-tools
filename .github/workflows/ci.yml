@@ -56,6 +56,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Frontend tests
+        run: npm test
+
       # The cache key contains the hash of the script, which pins the PDFium version and checksum.
       - name: Cache PDFium
         id: pdfium-cache

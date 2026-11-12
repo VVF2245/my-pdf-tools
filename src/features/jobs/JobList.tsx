@@ -1,9 +1,6 @@
 import { cancelJob, type ConversionError, type Job } from "../../shared/ipc";
+import { baseName } from "../../shared/files";
 import { t } from "../../shared/i18n";
-
-export function baseName(path: string): string {
-  return path.split(/[\\/]/).pop() ?? path;
-}
 
 export function errorMessage(error: ConversionError): string {
   const { code, ...params } = error;

@@ -66,6 +66,7 @@ fn tools_config(app: &AppHandle) -> ToolsConfig {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let sink = Arc::new(TauriSink(app.handle().clone()));
             app.manage(JobManager::new(Registry::new(&tools_config(app.handle())), sink));
