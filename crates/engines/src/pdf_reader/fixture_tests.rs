@@ -45,7 +45,7 @@ fn assert_size(actual: f32, expected: f32) {
 #[test]
 fn committed_pdfs_match_their_typst_sources() {
     let Some(location) = test_support::pdfium() else { return };
-    for name in ["slides", "notes", "twocol", "table"] {
+    for name in ["slides", "notes", "twocol", "table", "clauses"] {
         let source = std::fs::read_to_string(fixtures_dir().join(format!("{name}.typ"))).unwrap();
         let fresh = compile_typst(&source, HashMap::new()).expect("fixture source compiles");
         let committed = lines_of(&location, PdfSource::Path(&fixtures_dir().join(format!("{name}.pdf"))));
@@ -291,4 +291,22 @@ fn a_table_read_as_notes_keeps_all_its_text() {
         assert!(text.contains(cell), "{cell} missing: {text}");
     }
     assert_golden("table.expected.md", &text);
+}
+
+#[test]
+fn numbered_clauses_with_an_indented_first_line_stay_whole() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+
+    let Some(pages) = read("clauses.pdf") else { return };
+    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    let text = to_markdown(&document, "clauses_images").text;
+
+    // each clause is one list item: its wrapped lines are not cut off as paragraphs
+    assert!(text.contains("1. El número total de créditos establecido en los planes de estudios"), "{text}");
+    assert!(text.contains("2. El número de créditos de cada titulación será distribuido"), "{text}");
+    assert!(!text.contains("\n\nplanes de estudios"), "{text}");
+    // the ordinal letter and what follows it stay in the sentence
+    assert!(text.contains("149.1.30.a de la Constitución española"), "{text}");
+    assert_golden("clauses.expected.md", &text);
 }

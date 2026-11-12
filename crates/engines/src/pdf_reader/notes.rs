@@ -56,8 +56,12 @@ const HANGING_INDENT_TOLERANCE: f32 = 0.5;
 const INLINE_RUN_OFFSET: f32 = 0.7;
 /// A script (superscript, subscript) is set smaller than this fraction of the body.
 const SCRIPT_SIZE_FACTOR: f32 = 0.9;
-/// ...and this close horizontally to where the previous one ends.
-const INLINE_RUN_GAP: f32 = 0.4;
+/// ...and this close horizontally to where the previous one ends (a word space after a
+/// script, such as the `a` of `30.a`, can be about half a body size).
+const INLINE_RUN_GAP: f32 = 0.6;
+/// A numbered paragraph indents its first line; the other lines start at the column edge,
+/// up to this many line heights to the left of the marker.
+const FIRST_LINE_INDENT_MAX: f32 = 3.0;
 /// Advance of a monospaced glyph, as a fraction of its size.
 const MONO_ADVANCE: f32 = 0.6;
 /// Line pitch as a fraction of the body size when it cannot be measured.
@@ -419,9 +423,13 @@ impl Builder {
         }
 
         if let Some(last) = self.bullets.last() {
-            let wraps = close
-                && line.left > last.left + 0.3 * line.size
+            // wrapped under the item text (hanging indent), or, in a numbered paragraph with an
+            // indented first line, back at the column edge
+            let hanging = line.left > last.left + 0.3 * line.size
                 && (line.left - last.text_left).abs() <= HANGING_INDENT_TOLERANCE * line.size;
+            let first_line_indent = line.left < last.left - 0.3 * line.size
+                && line.left >= last.left - FIRST_LINE_INDENT_MAX * line.size;
+            let wraps = close && (hanging || first_line_indent);
             if wraps {
                 self.bullets.last_mut().expect("a bullet is open").lines.push(item.text.clone());
                 return;
