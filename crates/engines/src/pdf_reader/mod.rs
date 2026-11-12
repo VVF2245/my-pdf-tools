@@ -6,6 +6,7 @@
 pub mod clean;
 pub mod glyphs;
 pub mod lines;
+pub mod notes;
 pub mod pdfium;
 pub mod slides;
 #[doc(hidden)]

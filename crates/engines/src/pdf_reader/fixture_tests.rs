@@ -221,3 +221,74 @@ fn slides_convert_to_the_golden_markdown() {
     let expected = std::fs::read_to_string(&golden).expect("golden missing: run with UPDATE_GOLDEN=1");
     assert_eq!(expected.replace("\r\n", "\n"), actual);
 }
+
+/// Compares `actual` with `fixtures/pdf/<name>`; `UPDATE_GOLDEN=1` rewrites the golden.
+#[track_caller]
+fn assert_golden(name: &str, actual: &str) {
+    let golden = fixtures_dir().join(name);
+    if std::env::var("UPDATE_GOLDEN").is_ok_and(|v| !v.is_empty() && v != "0") {
+        std::fs::write(&golden, actual).unwrap();
+    }
+    let expected = std::fs::read_to_string(&golden).expect("golden missing: run with UPDATE_GOLDEN=1");
+    assert_eq!(expected.replace("\r\n", "\n"), actual);
+}
+
+#[test]
+fn notes_convert_to_the_golden_markdown() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+    use mpt_core::BlockKind;
+
+    let Some(pages) = read("notes.pdf") else { return };
+    let (document, warnings) = notes_to_document(&pages, NoteOptions::default());
+    assert!(warnings.is_empty(), "{warnings:?}");
+
+    // the running header and the page numbers are gone, and the structure is found
+    let levels: Vec<u8> = document
+        .blocks
+        .iter()
+        .filter_map(|b| match &b.kind {
+            BlockKind::Heading { level, .. } => Some(*level),
+            _ => None,
+        })
+        .collect();
+    assert!(levels.contains(&1) && levels.contains(&2) && levels.contains(&3), "{levels:?}");
+    assert!(document.blocks.iter().any(|b| matches!(b.kind, BlockKind::List { .. })));
+    assert!(document.blocks.iter().any(|b| matches!(b.kind, BlockKind::CodeBlock { .. })));
+
+    assert_golden("notes.expected.md", &to_markdown(&document, "notes_images").text);
+}
+
+#[test]
+fn two_columns_are_read_one_after_the_other() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+
+    let Some(pages) = read("twocol.pdf") else { return };
+    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    let text = to_markdown(&document, "twocol_images").text;
+
+    // every paragraph of the source is the same sentence: if lines of both columns were
+    // mixed, a paragraph would not start with it
+    let starts = "Este texto de prueba ocupa dos columnas";
+    let paragraphs: Vec<&str> = text.split("\n\n").map(str::trim).filter(|p| !p.is_empty() && !p.starts_with('#')).collect();
+    let odd: Vec<&&str> = paragraphs.iter().filter(|p| !p.starts_with(starts)).collect();
+    assert!(odd.is_empty(), "{odd:?}");
+    assert_golden("twocol.expected.md", &text);
+}
+
+#[test]
+fn a_table_read_as_notes_keeps_all_its_text() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+
+    // tables are not recognised yet (subphase 2D): the golden documents the current limit,
+    // where every row comes out as a line of plain text
+    let Some(pages) = read("table.pdf") else { return };
+    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    let text = to_markdown(&document, "table_images").text;
+    for cell in ["Muestra", "Ensayo 3", "Gamma", "7,01"] {
+        assert!(text.contains(cell), "{cell} missing: {text}");
+    }
+    assert_golden("table.expected.md", &text);
+}

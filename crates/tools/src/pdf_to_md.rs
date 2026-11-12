@@ -1,7 +1,8 @@
 //! PDF -> Markdown tool.
 //!
-//! For now every page is read as a slide (see `mpt_engines::pdf_reader::slides`); the
-//! "notes" mode, with the choice between both, comes next.
+//! Two modes: slides (every page is a slide, see `mpt_engines::pdf_reader::slides`) and
+//! notes (running text, see `mpt_engines::pdf_reader::notes`). The `mode` option picks one;
+//! `auto` looks at the page orientation and reports what it chose.
 //!
 //! Limit: the glyphs of the whole page range are held in memory at once (about 60 bytes
 //! per character, so a 500-page book takes a few tens of MB). The slide heuristics need
@@ -13,9 +14,10 @@ use std::path::{Path, PathBuf};
 
 use mpt_core::{
     CancelToken, ConversionError, ConversionOutcome, ConversionReport, ConversionRequest,
-    ConversionWarning, OptionKind, OptionSpec, Progress, Tool, ToolDescriptor,
+    ConversionWarning, OptionChoice, OptionKind, OptionSpec, Progress, Tool, ToolDescriptor,
 };
 use mpt_engines::markdown_writer::{MarkdownOutput, to_markdown};
+use mpt_engines::pdf_reader::notes::{NoteOptions, notes_to_document};
 use mpt_engines::pdf_reader::slides::{SlideOptions, slides_to_document};
 use mpt_engines::pdf_reader::{PageLines, PdfSource, PdfiumLocation, extract_pages_with, group_lines};
 
@@ -57,14 +59,27 @@ fn write_markdown(file: &mut std::fs::File, folder: &Path, markdown: &MarkdownOu
     file.write_all(markdown.text.as_bytes())
 }
 
-/// Warns when most pages are portrait: this mode is meant for slides.
-fn portrait_warning(pages: &[PageLines]) -> Option<ConversionWarning> {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    Auto,
+    Notes,
+    Slides,
+}
+
+impl Mode {
+    fn from_option(request: &ConversionRequest) -> Self {
+        match request.text_option("mode") {
+            Some("notes") => Self::Notes,
+            Some("slides") => Self::Slides,
+            _ => Self::Auto,
+        }
+    }
+}
+
+/// Most pages portrait: running text. Otherwise (landscape, or an even split): slides.
+fn looks_like_notes(pages: &[PageLines]) -> bool {
     let portrait = pages.iter().filter(|p| p.height > p.width).count();
-    (portrait * 2 > pages.len()).then(|| ConversionWarning {
-        code: "portraitPages".to_string(),
-        detail: format!("{portrait}/{}", pages.len()),
-        page: None,
-    })
+    portrait * 2 > pages.len()
 }
 
 /// Name and description are translation keys, like every label of a descriptor.
@@ -82,6 +97,17 @@ impl Tool for PdfToMd {
             inputs: Self::EXTENSIONS.iter().map(|e| e.to_string()).collect(),
             outputs: vec!["md".to_string()],
             options: vec![
+                OptionSpec {
+                    key: "mode".to_string(),
+                    label: "option.mode".to_string(),
+                    kind: OptionKind::Choice {
+                        choices: ["auto", "notes", "slides"]
+                            .iter()
+                            .map(|m| OptionChoice { value: m.to_string(), label: format!("mode.{m}") })
+                            .collect(),
+                        default: "auto".to_string(),
+                    },
+                },
                 page("firstPage", "option.firstPage"),
                 page("lastPage", "option.lastPage"),
                 OptionSpec {
@@ -101,9 +127,8 @@ impl Tool for PdfToMd {
     ) -> Result<ConversionOutcome, ConversionError> {
         let first = page_option(request, "firstPage");
         let last = page_option(request, "lastPage");
-        let options = SlideOptions {
-            remove_furniture: request.bool_option("removeHeadersFooters").unwrap_or(true),
-        };
+        let remove_furniture = request.bool_option("removeHeadersFooters").unwrap_or(true);
+        let mode = Mode::from_option(request);
         let total = request.inputs.len().max(1) as f32;
         let mut outcome = ConversionOutcome::default();
         let mut report = ConversionReport::default();
@@ -126,8 +151,24 @@ impl Tool for PdfToMd {
             if pages.iter().all(|page| page.lines.is_empty()) {
                 return Err(ConversionError::NoExtractableText);
             }
-            report.warnings.extend(portrait_warning(&pages));
-            let (document, warnings) = slides_to_document(&pages, options);
+            let notes = match mode {
+                Mode::Notes => true,
+                Mode::Slides => false,
+                Mode::Auto => {
+                    let notes = looks_like_notes(&pages);
+                    report.warnings.push(ConversionWarning {
+                        code: if notes { "modeChosenNotes" } else { "modeChosenSlides" }.to_string(),
+                        detail: String::new(),
+                        page: None,
+                    });
+                    notes
+                }
+            };
+            let (document, warnings) = if notes {
+                notes_to_document(&pages, NoteOptions { remove_furniture })
+            } else {
+                slides_to_document(&pages, SlideOptions { remove_furniture })
+            };
             report.warnings.extend(warnings);
             done(0.8);
             cancel.check()?;
@@ -197,8 +238,9 @@ mod tests {
         assert_eq!(descriptor.inputs, ["pdf"]);
         assert_eq!(descriptor.outputs, ["md"]);
         let keys: Vec<&str> = descriptor.options.iter().map(|o| o.key.as_str()).collect();
-        assert_eq!(keys, ["firstPage", "lastPage", "removeHeadersFooters"]);
-        assert!(matches!(descriptor.options[0].kind, OptionKind::Number { step: 1.0, .. }));
+        assert_eq!(keys, ["mode", "firstPage", "lastPage", "removeHeadersFooters"]);
+        assert!(matches!(descriptor.options[0].kind, OptionKind::Choice { .. }));
+        assert!(matches!(descriptor.options[1].kind, OptionKind::Number { step: 1.0, .. }));
     }
 
     #[test]
@@ -213,7 +255,9 @@ mod tests {
         let written = std::fs::read_to_string(&outcome.outputs[0]).unwrap();
         let golden = std::fs::read_to_string(fixture("slides.expected.md")).unwrap();
         assert_eq!(written, golden.replace("\r\n", "\n"));
-        assert!(outcome.report.warnings.is_empty());
+        // auto mode says what it chose
+        assert_eq!(outcome.report.warnings.len(), 1);
+        assert_eq!(outcome.report.warnings[0].code, "modeChosenSlides");
     }
 
     #[test]
@@ -326,16 +370,40 @@ mod tests {
         assert!(!out.path().join("notes.md").exists());
     }
 
+    fn mode_chosen(outcome: &ConversionOutcome) -> Vec<&str> {
+        let codes = outcome.report.warnings.iter().map(|w| w.code.as_str());
+        codes.filter(|c| c.starts_with("modeChosen")).collect()
+    }
+
     #[test]
-    fn mostly_portrait_pages_get_a_warning_and_slides_do_not() {
+    fn auto_picks_notes_for_portrait_pages_and_slides_for_landscape_ones() {
         let Some(tool) = tool() else { return };
-        let out = TempDir::new("pdf-md-portrait");
+        let out = TempDir::new("pdf-md-auto");
 
         let notes = run(&tool, &request(&fixture("notes.pdf"), out.path(), &[])).unwrap();
-        assert_eq!(notes.report.warnings.iter().filter(|w| w.code == "portraitPages").count(), 1);
+        assert_eq!(mode_chosen(&notes), ["modeChosenNotes"]);
 
         let slides = run(&tool, &request(&fixture("slides.pdf"), out.path(), &[])).unwrap();
-        assert!(slides.report.warnings.iter().all(|w| w.code != "portraitPages"));
+        assert_eq!(mode_chosen(&slides), ["modeChosenSlides"]);
+    }
+
+    #[test]
+    fn a_forced_mode_is_used_and_not_reported() {
+        let Some(tool) = tool() else { return };
+        let out = TempDir::new("pdf-md-forced");
+        let forced = |mode: &str| [("mode", OptionValue::Text(mode.to_string()))];
+
+        // portrait pages forced to slides: one section per page, no heading levels from sizes
+        let as_slides = run(&tool, &request(&fixture("notes.pdf"), out.path(), &forced("slides"))).unwrap();
+        assert!(mode_chosen(&as_slides).is_empty());
+        let text = std::fs::read_to_string(&as_slides.outputs[0]).unwrap();
+        assert!(!text.contains("
+# "), "{text}");
+
+        let as_notes = run(&tool, &request(&fixture("notes.pdf"), out.path(), &forced("notes"))).unwrap();
+        assert!(mode_chosen(&as_notes).is_empty());
+        let text = std::fs::read_to_string(&as_notes.outputs[0]).unwrap();
+        assert!(text.contains("# "), "{text}");
     }
 
     #[test]

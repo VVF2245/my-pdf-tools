@@ -7,6 +7,8 @@
 //! the app not find it.
 //!
 //! `smoke <file.pdf>`: exits with an error unless the Markdown comes out with a heading.
+//! It expects a slide deck (`## ` first, as in `fixtures/pdf/slides.pdf`): a notes PDF starts
+//! with `# ` or a paragraph and would fail the check without being wrong.
 
 use std::path::PathBuf;
 

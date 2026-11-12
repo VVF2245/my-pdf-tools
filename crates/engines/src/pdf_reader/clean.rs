@@ -169,9 +169,31 @@ fn eligible_for_repeat(text: &str) -> bool {
     digits > 0 && digits <= 6 && only_page_number_chars
 }
 
-/// Digits become `#` so `Page 3 | 13` and `Page 4 | 13` compare equal.
+/// A run of digits (with the spaces a kerned page number may show, `1 2`) becomes one `#`, so
+/// `Page 3 | 13` and `Page 4 | 13` compare equal, and so do `9 Title` and `10 Title`.
 fn normalize_for_repeat(text: &str) -> String {
-    text.chars().map(|c| if c.is_ascii_digit() { '#' } else { c }).collect()
+    let mut out = String::with_capacity(text.len());
+    let mut in_run = false;
+    let mut spaces = 0;
+    for c in text.chars() {
+        if c.is_ascii_digit() {
+            if !in_run {
+                out.push('#');
+                in_run = true;
+            }
+            spaces = 0;
+        } else if c == ' ' && in_run {
+            spaces += 1;
+        } else {
+            if spaces > 0 {
+                out.push(' ');
+            }
+            spaces = 0;
+            in_run = false;
+            out.push(c);
+        }
+    }
+    out
 }
 
 /// Which page margins may hold repeated furniture.
@@ -254,6 +276,15 @@ pub fn repeated_margin_lines(pages: &[PageLines], bands: MarginBands) -> Vec<Vec
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn page_numbers_of_any_width_normalize_alike() {
+        assert_eq!(normalize_for_repeat("9 Title"), normalize_for_repeat("10 Title"));
+        assert_eq!(normalize_for_repeat("1 2 Title"), normalize_for_repeat("9 Title"));
+        assert_eq!(normalize_for_repeat("Page 3 | 13"), normalize_for_repeat("Page 4 | 130"));
+        // digits inside text still tell different lines apart
+        assert_ne!(normalize_for_repeat("Chapter 3 Title"), normalize_for_repeat("Chapter Title"));
+    }
     use crate::pdf_reader::glyphs::Glyph;
     use std::sync::Arc;
 

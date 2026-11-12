@@ -7,9 +7,13 @@ export const es: Record<string, string> = {
   "tool.mdToPdf.name": "Markdown → PDF",
   "tool.mdToPdf.description": "Convierte ficheros Markdown en PDF con la misma tipografía en cualquier equipo.",
 
-  "tool.pdfToMd.name": "PDF → Markdown (diapositivas)",
-  "tool.pdfToMd.description": "Convierte un PDF en Markdown, una sección por página: el título de cada diapositiva y sus viñetas.",
+  "tool.pdfToMd.name": "PDF → Markdown",
+  "tool.pdfToMd.description": "Convierte un PDF en Markdown: apuntes y documentos (títulos, párrafos, listas y código) o diapositivas (una sección por página).",
 
+  "option.mode": "Tipo de documento",
+  "mode.auto": "Detectar según la orientación de las páginas",
+  "mode.notes": "Apuntes o documento (texto corrido)",
+  "mode.slides": "Diapositivas",
   "option.firstPage": "Primera página (0 = desde el principio)",
   "option.lastPage": "Última página (0 = hasta el final)",
   "option.removeHeadersFooters": "Quitar pies y números repetidos",
@@ -57,6 +61,7 @@ export const es: Record<string, string> = {
   "warning.imageUnsupported": "Formato de imagen no admitido: {detail}",
   "warning.imageRemoteSkipped": "Imagen remota omitida (todo se procesa en local): {detail}",
   "warning.emptySlide": "Página {page} sin texto utilizable: se ha omitido.",
-  "warning.portraitPages": "La mayoría de las páginas son verticales ({detail}): este modo está pensado para diapositivas y un documento de apuntes puede salir mal.",
+  "warning.modeChosenNotes": "Se ha convertido como apuntes o documento (la mayoría de las páginas son verticales). Si es de diapositivas, elige «Diapositivas» en las opciones.",
+  "warning.modeChosenSlides": "Se ha convertido como diapositivas (la mayoría de las páginas son horizontales). Si es un documento de texto, elige «Apuntes o documento» en las opciones.",
   "warning.htmlIgnored": "HTML ignorado: {detail}",
 };
