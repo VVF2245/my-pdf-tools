@@ -2,7 +2,7 @@
 
 A local desktop app for working with PDF files. Everything runs on your own machine: no network, no telemetry, your documents never leave your computer.
 
-> **Status: early development (pre-alpha).** Markdown → PDF works end to end, and PDF → Markdown works for slide decks and for flowing notes; tables are next. There is nothing to download yet.
+> **Status: early development (pre-alpha).** Markdown → PDF works end to end, and PDF → Markdown works for slide decks and for flowing notes; the next step is the release. There is nothing to download yet.
 
 ## What it does
 
@@ -11,7 +11,8 @@ The first version (V1) focuses on converting between PDF and Markdown:
 - **Markdown → PDF** *(available)*: drag `.md` files onto the window (or pick them with the "Buscar ficheros…" button), choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
 - **PDF → Markdown**, with two modes:
   - *Slides* *(available)*: every page becomes a `##` section with the slide's title and its bullets as nested lists. Footers and slide numbers repeated on many slides are dropped, and you can convert a range of pages. Slides that hold a diagram drawn with shapes get a picture of the whole page.
-  - *Notes* *(available)*: flowing text from digital PDFs. Headings come from the font sizes (the distinct sizes above the body text give levels 1 to 6), paragraphs from the vertical gaps, and monospaced runs become code blocks. Multi-column pages are read column by column (checked with LaTeX files; not with Word or InDesign ones). Running headers, footers and page numbers are dropped. Known limits: bold and italic are not kept, list markers drawn as graphics (LaTeX bullets) are lost, and tables come out as plain text.
+  - *Notes* *(available)*: flowing text from digital PDFs. Headings come from the font sizes (the distinct sizes above the body text give levels 1 to 6), paragraphs from the vertical gaps, and monospaced runs become code blocks. Multi-column pages are read column by column (checked with LaTeX files; not with Word or InDesign ones). Running headers, footers and page numbers are dropped. Known limits: bold and italic are not kept, list markers drawn as graphics (LaTeX bullets) are lost, and tables with merged or multi-line cells, or that cross a page, are not understood.
+  - *Tables* (notes mode only): consecutive lines that split into the same columns become a Markdown table, the first row being the header; numeric columns are right-aligned. A table with empty cells is converted and reported (`tableLowConfidence`); text that looks like a table but is unclear stays as text and is reported (`tableCandidate`). Indexes with dot leaders and program listings with line numbers are not tables. In slides mode tables are **not** converted: a slide that seems to hold one gets a `tableInSlide` warning (future work).
   - *Images*: embedded pictures are saved as PNG in `<name>_images/` and linked after the text of their page (not at their exact position). Icons, tiny pictures and images repeated on many pages (logos) are dropped, and the report says how many. A conversion with images goes into a folder of its own. Pictures nested inside a form XObject (some LaTeX figures) are not found yet. The *Images* option can turn this off or limit it to embedded pictures.
   - The *Document type* option picks the mode; "auto" chooses by page orientation (mostly portrait: notes, otherwise slides) and the report says which one it used.
 

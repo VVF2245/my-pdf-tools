@@ -88,5 +88,8 @@ export const es: Record<string, string> = {
   "warning.imagesSkipped": "Se han descartado {detail} imágenes por ser muy pequeñas o repetirse en muchas páginas (logos).",
   "warning.imagesFailed": "No se pudieron leer {detail} imágenes del PDF.",
   "warning.pageRendered": "La página {page} lleva un diagrama dibujado: se ha añadido una imagen de la página.",
+  "warning.tableLowConfidence": "La tabla de la página {page} tiene celdas vacías o columnas poco claras: revísala.",
+  "warning.tableCandidate": "En la página {page} hay texto que parece una tabla pero no se ha reconocido como tal: queda como texto.",
+  "warning.tableInSlide": "La diapositiva {page} parece contener una tabla; en diapositivas las tablas no se convierten y quedan como texto.",
   "warning.htmlIgnored": "HTML ignorado: {detail}",
 };

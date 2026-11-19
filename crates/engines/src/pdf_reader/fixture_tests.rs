@@ -277,14 +277,14 @@ fn two_columns_are_read_one_after_the_other() {
 }
 
 #[test]
-fn a_table_read_as_notes_keeps_all_its_text() {
+fn a_table_is_read_as_a_markdown_table() {
     use crate::markdown_writer::to_markdown;
     use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
 
-    // tables are not recognised yet (subphase 2D): the golden documents the current limit,
-    // where every row comes out as a line of plain text
     let Some(pages) = read("table.pdf") else { return };
-    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    // the header row and the numeric columns are found, and nothing needs a warning
+    let (document, warnings) = notes_to_document(&pages, NoteOptions::default());
+    assert!(warnings.is_empty(), "{warnings:?}");
     let text = to_markdown(&document, "table_images").text;
     for cell in ["Muestra", "Ensayo 3", "Gamma", "7,01"] {
         assert!(text.contains(cell), "{cell} missing: {text}");

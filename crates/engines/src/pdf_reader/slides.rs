@@ -22,6 +22,18 @@ impl Default for SlideOptions {
     }
 }
 
+/// Whether the lines of a slide look like a table. Two text boxes side by side also split
+/// into columns, so only three or more columns, or numbers, count.
+fn holds_a_table(lines: &[&Line], body: f32) -> bool {
+    use mpt_core::TableAlign;
+    super::tables::detect(lines, DEFAULT_PITCH * body)
+        .tables
+        .iter()
+        .any(|t| t.header.len() >= 3 || t.aligns.contains(&TableAlign::Right))
+}
+
+/// Line pitch as a fraction of the body size, to tell table rows from distant lines.
+const DEFAULT_PITCH: f32 = 1.2;
 /// Bullet glyphs: unambiguous, so the text may follow without a space.
 const GLYPH_BULLETS: &[char] = &[
     '\u{2022}', '\u{25E6}', '\u{25AA}', '\u{2023}', '\u{25CF}', '\u{25CB}', '\u{25A0}', '\u{25A1}',
@@ -71,6 +83,15 @@ pub fn slides_to_document(pages: &[PageLines], options: SlideOptions) -> (Docume
                 page: Some(page.number),
             });
             continue;
+        }
+        // Tables are only converted in notes mode: say so instead of leaving them flattened
+        // without a word.
+        if holds_a_table(&lines, body) {
+            warnings.push(ConversionWarning {
+                code: "tableInSlide".to_string(),
+                detail: String::new(),
+                page: Some(page.number),
+            });
         }
         let first_block = blocks.len();
         blocks.extend(slide_blocks(&lines, body));
@@ -440,6 +461,54 @@ mod tests {
             })
             .collect();
         Line::from_glyphs(1, glyphs).unwrap()
+    }
+
+    /// A line made of cells (text, left x) with wide gaps between them.
+    fn cells_line(cells: &[(&str, f32)], baseline: f32) -> Line {
+        let size = 18.0;
+        let mut glyphs = Vec::new();
+        for (text, left) in cells {
+            for (i, ch) in text.chars().enumerate() {
+                glyphs.push(Glyph {
+                    ch,
+                    left: left + i as f32 * size * 0.5,
+                    right: left + (i as f32 + 1.0) * size * 0.5,
+                    bottom: baseline,
+                    top: baseline + size,
+                    size,
+                    font: Arc::from("F"),
+                    mono: false,
+                });
+            }
+        }
+        Line::from_glyphs(1, glyphs).unwrap()
+    }
+
+    #[test]
+    fn a_table_on_a_slide_is_reported_but_two_text_boxes_are_not() {
+        let numbers = slide(
+            1,
+            vec![
+                line("Resultados", 40.0, 360.0, 24.0),
+                cells_line(&[("Muestra", 40.0), ("Ensayo 1", 300.0), ("Ensayo 2", 500.0)], 300.0),
+                cells_line(&[("Alfa", 40.0), ("0,69", 320.0), ("0,51", 520.0)], 270.0),
+                cells_line(&[("Beta", 40.0), ("1,20", 320.0), ("1,18", 520.0)], 240.0),
+            ],
+        );
+        let (_, warnings) = slides_to_document(&[numbers], SlideOptions::default());
+        assert!(warnings.iter().any(|w| w.code == "tableInSlide" && w.page == Some(1)), "{warnings:?}");
+
+        let boxes = slide(
+            1,
+            vec![
+                line("Dos ideas", 40.0, 360.0, 24.0),
+                cells_line(&[("primera idea", 40.0), ("segunda idea", 400.0)], 300.0),
+                cells_line(&[("mas texto aqui", 40.0), ("y mas texto", 400.0)], 270.0),
+                cells_line(&[("otra linea", 40.0), ("otra mas", 400.0)], 240.0),
+            ],
+        );
+        let (_, warnings) = slides_to_document(&[boxes], SlideOptions::default());
+        assert!(warnings.iter().all(|w| w.code != "tableInSlide"), "{warnings:?}");
     }
 
     fn slide(number: u32, lines: Vec<Line>) -> PageLines {
