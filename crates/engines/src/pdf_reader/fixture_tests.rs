@@ -4,7 +4,6 @@
 //! If a test here fails after upgrading Typst, regenerate the fixtures first:
 //! `cargo run -p mpt-engines --example gen_fixtures`.
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use super::clean::{MarginBands, repeated_margin_lines};
@@ -45,9 +44,9 @@ fn assert_size(actual: f32, expected: f32) {
 #[test]
 fn committed_pdfs_match_their_typst_sources() {
     let Some(location) = test_support::pdfium() else { return };
-    for name in ["slides", "notes", "twocol", "table", "clauses"] {
+    for name in ["slides", "notes", "twocol", "table", "clauses", "images", "diagram"] {
         let source = std::fs::read_to_string(fixtures_dir().join(format!("{name}.typ"))).unwrap();
-        let fresh = compile_typst(&source, HashMap::new()).expect("fixture source compiles");
+        let fresh = compile_typst(&source, super::images::fixture_assets()).expect("fixture source compiles");
         let committed = lines_of(&location, PdfSource::Path(&fixtures_dir().join(format!("{name}.pdf"))));
         let regenerated = lines_of(&location, PdfSource::Bytes(&fresh));
         // Compare what the reader sees (not the bytes, which may differ across Typst versions).
@@ -309,4 +308,42 @@ fn numbered_clauses_with_an_indented_first_line_stay_whole() {
     // the ordinal letter and what follows it stay in the sentence
     assert!(text.contains("149.1.30.a de la Constitución española"), "{text}");
     assert_golden("clauses.expected.md", &text);
+}
+
+#[test]
+fn a_photo_is_extracted_and_the_repeated_logo_is_dropped() {
+    use super::images::{extract_media, filter_images};
+
+    let Some(location) = test_support::pdfium() else { return };
+    let path = fixtures_dir().join("images.pdf");
+    let mut media = extract_media(&location, PdfSource::Path(&path), 1, 0, &|_, _| true).unwrap();
+    assert!(media.pages.len() >= 3, "{} pages", media.pages.len());
+    assert_eq!(media.failed, 0);
+    // before the filter: the logo is on every page, the photo only on the first
+    assert!(media.pages.iter().all(|p| !p.images.is_empty()));
+
+    let dropped = filter_images(&mut media.pages);
+    assert_eq!(dropped, media.pages.len(), "one logo per page");
+    let kept: Vec<_> = media.pages.iter().flat_map(|p| &p.images).collect();
+    assert_eq!(kept.len(), 1);
+    // the PNG decodes to the size of the source picture
+    let decoded = image::load_from_memory(&kept[0].png).expect("a valid PNG");
+    // PDFium may round the height by a pixel
+    assert_eq!(decoded.width(), 400);
+    assert!(decoded.height().abs_diff(300) <= 1, "height {}", decoded.height());
+}
+
+#[test]
+fn a_diagram_drawn_with_shapes_is_counted_and_rendered() {
+    use super::images::{GRAPHIC_PAGE_SHAPES, RENDER_WIDTH_PX, extract_media, render_pages};
+
+    let Some(location) = test_support::pdfium() else { return };
+    let path = fixtures_dir().join("diagram.pdf");
+    let media = extract_media(&location, PdfSource::Path(&path), 1, 0, &|_, _| true).unwrap();
+    assert!(media.pages[0].images.is_empty());
+    assert!(media.pages[0].graphics >= GRAPHIC_PAGE_SHAPES, "{} shapes", media.pages[0].graphics);
+
+    let renders = render_pages(&location, PdfSource::Path(&path), &[1], RENDER_WIDTH_PX).unwrap();
+    let decoded = image::load_from_memory(&renders[0].1).expect("a valid PNG");
+    assert_eq!(decoded.width(), RENDER_WIDTH_PX);
 }

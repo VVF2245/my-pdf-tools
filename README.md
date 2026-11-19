@@ -2,7 +2,7 @@
 
 A local desktop app for working with PDF files. Everything runs on your own machine: no network, no telemetry, your documents never leave your computer.
 
-> **Status: early development (pre-alpha).** Markdown → PDF works end to end, and PDF → Markdown works for slide decks and for flowing notes; images and tables are next. There is nothing to download yet.
+> **Status: early development (pre-alpha).** Markdown → PDF works end to end, and PDF → Markdown works for slide decks and for flowing notes; tables are next. There is nothing to download yet.
 
 ## What it does
 
@@ -10,8 +10,9 @@ The first version (V1) focuses on converting between PDF and Markdown:
 
 - **Markdown → PDF** *(available)*: drag `.md` files onto the window (or pick them with the "Buscar ficheros…" button), choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
 - **PDF → Markdown**, with two modes:
-  - *Slides* *(available)*: every page becomes a `##` section with the slide's title and its bullets as nested lists. Footers and slide numbers repeated on many slides are dropped, and you can convert a range of pages. Images of diagrams are not extracted yet.
+  - *Slides* *(available)*: every page becomes a `##` section with the slide's title and its bullets as nested lists. Footers and slide numbers repeated on many slides are dropped, and you can convert a range of pages. Slides that hold a diagram drawn with shapes get a picture of the whole page.
   - *Notes* *(available)*: flowing text from digital PDFs. Headings come from the font sizes (the distinct sizes above the body text give levels 1 to 6), paragraphs from the vertical gaps, and monospaced runs become code blocks. Multi-column pages are read column by column (checked with LaTeX files; not with Word or InDesign ones). Running headers, footers and page numbers are dropped. Known limits: bold and italic are not kept, list markers drawn as graphics (LaTeX bullets) are lost, and tables come out as plain text.
+  - *Images*: embedded pictures are saved as PNG in `<name>_images/` and linked after the text of their page (not at their exact position). Icons, tiny pictures and images repeated on many pages (logos) are dropped, and the report says how many. A conversion with images goes into a folder of its own. Pictures nested inside a form XObject (some LaTeX figures) are not found yet. The *Images* option can turn this off or limit it to embedded pictures.
   - The *Document type* option picks the mode; "auto" chooses by page orientation (mostly portrait: notes, otherwise slides) and the report says which one it used.
 
 Each conversion produces a short report with non-fatal warnings (for example, a page with no usable text, or which mode was chosen automatically), because PDF → Markdown is heuristic and lossy by nature.

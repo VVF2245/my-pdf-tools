@@ -63,10 +63,35 @@ pub fn claim_path(wanted: &Path, also_free: &dyn Fn(&Path) -> bool) -> io::Resul
     }
 }
 
+/// Creates a folder named `name` inside `parent` that nobody else has: `name`, then
+/// `name (1)`, `name (2)`... Like [`claim_path`], the folder is created in the same step that
+/// finds the name, so two jobs cannot choose the same one.
+pub fn claim_dir(parent: &Path, name: &str) -> io::Result<PathBuf> {
+    let mut n = 0;
+    loop {
+        let candidate = if n == 0 { parent.join(name) } else { parent.join(format!("{name} ({n})")) };
+        n += 1;
+        match std::fs::create_dir(&candidate) {
+            Ok(()) => return Ok(candidate),
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::test_util::TempDir;
+
+    #[test]
+    fn claimed_folders_are_numbered_and_never_reused() {
+        let dir = TempDir::new("claim-dir");
+        let first = claim_dir(dir.path(), "report").unwrap();
+        let second = claim_dir(dir.path(), "report").unwrap();
+        assert!(first.ends_with("report") && first.is_dir());
+        assert!(second.ends_with("report (1)") && second.is_dir());
+    }
 
     #[test]
     fn extension_check_is_case_insensitive() {
