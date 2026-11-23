@@ -5,6 +5,7 @@
 
 pub mod clean;
 pub mod glyphs;
+pub mod images;
 pub mod lines;
 pub mod notes;
 pub mod pdfium;

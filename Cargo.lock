@@ -2660,6 +2660,7 @@ dependencies = [
 name = "mpt-engines"
 version = "0.1.0"
 dependencies = [
+ "image",
  "mpt-core",
  "pdfium-render",
  "pulldown-cmark",

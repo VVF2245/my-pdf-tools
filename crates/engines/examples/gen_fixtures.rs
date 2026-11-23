@@ -2,10 +2,10 @@
 //!
 //! `cargo run -p mpt-engines --example gen_fixtures`
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use mpt_engines::pdf::compile_typst;
+use mpt_engines::pdf_reader::images::fixture_assets;
 
 fn main() {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/pdf");
@@ -18,7 +18,7 @@ fn main() {
 
     for source in sources {
         let typst = std::fs::read_to_string(&source).expect("readable source");
-        let pdf = compile_typst(&typst, HashMap::new())
+        let pdf = compile_typst(&typst, fixture_assets())
             .unwrap_or_else(|e| panic!("{}: {e}", source.display()));
         let target = source.with_extension("pdf");
         std::fs::write(&target, &pdf).expect("writable target");

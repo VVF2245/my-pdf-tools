@@ -17,12 +17,15 @@ use mpt_core::{
     ConversionWarning, OptionChoice, OptionKind, OptionSpec, Progress, Tool, ToolDescriptor,
 };
 use mpt_engines::markdown_writer::{MarkdownOutput, to_markdown};
+use mpt_engines::pdf_reader::images::{
+    ExtractedMedia, GRAPHIC_PAGE_SHAPES, RENDER_WIDTH_PX, add_media, extract_media, filter_images, render_pages,
+};
 use mpt_engines::pdf_reader::notes::{NoteOptions, notes_to_document};
 use mpt_engines::pdf_reader::slides::{SlideOptions, slides_to_document};
 use mpt_engines::pdf_reader::{PageLines, PdfSource, PdfiumLocation, extract_pages_with, group_lines};
 
 use crate::config::ToolsConfig;
-use crate::paths::{check_extension, claim_path, output_path};
+use crate::paths::{check_extension, claim_dir, claim_path, output_path};
 
 pub struct PdfToMd {
     pdfium: PdfiumLocation,
@@ -76,6 +79,29 @@ impl Mode {
     }
 }
 
+/// What to do with the images of the PDF.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ImagesMode {
+    /// Embedded images, and a picture of each slide that holds a diagram (slides mode).
+    Auto,
+    Embedded,
+    None,
+}
+
+impl ImagesMode {
+    fn from_option(request: &ConversionRequest) -> Self {
+        match request.text_option("images") {
+            Some("embedded") => Self::Embedded,
+            Some("none") => Self::None,
+            _ => Self::Auto,
+        }
+    }
+}
+
+fn warning(code: &str, detail: String, page: Option<u32>) -> ConversionWarning {
+    ConversionWarning { code: code.to_string(), detail, page }
+}
+
 /// Most pages portrait: running text. Otherwise (landscape, or an even split): slides.
 fn looks_like_notes(pages: &[PageLines]) -> bool {
     let portrait = pages.iter().filter(|p| p.height > p.width).count();
@@ -110,6 +136,18 @@ impl Tool for PdfToMd {
                         default: "auto".to_string(),
                     },
                 },
+                OptionSpec {
+                    key: "images".to_string(),
+                    label: "option.images".to_string(),
+                    help: Some("option.images.help".to_string()),
+                    kind: OptionKind::Choice {
+                        choices: ["auto", "embedded", "none"]
+                            .iter()
+                            .map(|m| OptionChoice { value: m.to_string(), label: format!("images.{m}") })
+                            .collect(),
+                        default: "auto".to_string(),
+                    },
+                },
                 page("firstPage", "option.firstPage"),
                 page("lastPage", "option.lastPage"),
                 OptionSpec {
@@ -132,6 +170,7 @@ impl Tool for PdfToMd {
         let last = page_option(request, "lastPage");
         let remove_furniture = request.bool_option("removeHeadersFooters").unwrap_or(true);
         let mode = Mode::from_option(request);
+        let images_mode = ImagesMode::from_option(request);
         let total = request.inputs.len().max(1) as f32;
         let mut outcome = ConversionOutcome::default();
         let mut report = ConversionReport::default();
@@ -151,7 +190,22 @@ impl Tool for PdfToMd {
             cancel.check()?;
 
             let pages: Vec<PageLines> = pages.into_iter().map(group_lines).collect();
-            if pages.iter().all(|page| page.lines.is_empty()) {
+
+            let mut media = ExtractedMedia::default();
+            if images_mode != ImagesMode::None {
+                media = extract_media(&self.pdfium, PdfSource::Path(input), first, last, &|_, _| {
+                    !cancel.is_cancelled()
+                })?;
+                let dropped = filter_images(&mut media.pages);
+                if dropped > 0 {
+                    report.warnings.push(warning("imagesSkipped", dropped.to_string(), None));
+                }
+                if media.failed > 0 {
+                    report.warnings.push(warning("imagesFailed", media.failed.to_string(), None));
+                }
+            }
+            let has_images = media.pages.iter().any(|p| !p.images.is_empty());
+            if !has_images && pages.iter().all(|page| page.lines.is_empty()) {
                 return Err(ConversionError::NoExtractableText);
             }
             let notes = match mode {
@@ -167,23 +221,63 @@ impl Tool for PdfToMd {
                     notes
                 }
             };
-            let (document, warnings) = if notes {
+            let (mut document, mut warnings) = if notes {
                 notes_to_document(&pages, NoteOptions { remove_furniture })
             } else {
                 slides_to_document(&pages, SlideOptions { remove_furniture })
             };
+
+            // A slide with a diagram is drawn with shapes, not images: it gets a picture.
+            let mut renders = Vec::new();
+            if !notes && images_mode == ImagesMode::Auto {
+                let graphic: Vec<u32> =
+                    media.pages.iter().filter(|p| p.graphics >= GRAPHIC_PAGE_SHAPES).map(|p| p.number).collect();
+                if !graphic.is_empty() {
+                    renders = render_pages(&self.pdfium, PdfSource::Path(input), &graphic, RENDER_WIDTH_PX)?;
+                    for (number, _) in &renders {
+                        report.warnings.push(warning("pageRendered", String::new(), Some(*number)));
+                    }
+                }
+            }
+            // a page with pictures is not empty
+            warnings.retain(|w| {
+                w.code != "emptySlide"
+                    || !w.page.is_some_and(|n| {
+                        renders.iter().any(|(r, _)| *r == n)
+                            || media.pages.iter().any(|p| p.number == n && !p.images.is_empty())
+                    })
+            });
+            add_media(&mut document, &media.pages, &renders);
             report.warnings.extend(warnings);
             done(0.8);
             cancel.check()?;
 
             // Claim `<name>.md` only if `<name>_images` is free too (a leftover folder from
             // an earlier run must not have its images overwritten).
-            let wanted = output_path(input, request.output_dir.as_deref(), "md");
+            let mut wanted = output_path(input, request.output_dir.as_deref(), "md");
+            // A conversion with images gets a folder of its own (the `.md` and its images
+            // folder inside), so Downloads is not filled with loose pictures.
+            let mut own_folder = None;
+            if !document.assets.is_empty() {
+                let parent = wanted.parent().map(Path::to_path_buf).unwrap_or_default();
+                let stem = input.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
+                let folder = claim_dir(&parent, &stem)?;
+                wanted = folder.join(wanted.file_name().unwrap_or_default());
+                own_folder = Some(folder);
+            }
             let folder_free = |md: &Path| {
                 let folder = md.parent().map(Path::to_path_buf).unwrap_or_else(PathBuf::new);
                 !folder.join(images_dir_name(md)).exists()
             };
-            let (target, mut file) = claim_path(&wanted, &folder_free)?;
+            let (target, mut file) = match claim_path(&wanted, &folder_free) {
+                Ok(claimed) => claimed,
+                Err(e) => {
+                    if let Some(folder) = &own_folder {
+                        let _ = std::fs::remove_dir(folder);
+                    }
+                    return Err(e.into());
+                }
+            };
             let images_dir = images_dir_name(&target);
             let markdown = to_markdown(&document, &images_dir);
 
@@ -193,6 +287,9 @@ impl Tool for PdfToMd {
                 let _ = std::fs::remove_file(&target);
                 if !markdown.images.is_empty() {
                     let _ = std::fs::remove_dir_all(folder.join(&images_dir));
+                }
+                if let Some(own) = &own_folder {
+                    let _ = std::fs::remove_dir(own); // only if empty
                 }
                 return Err(e.into());
             }
@@ -241,9 +338,9 @@ mod tests {
         assert_eq!(descriptor.inputs, ["pdf"]);
         assert_eq!(descriptor.outputs, ["md"]);
         let keys: Vec<&str> = descriptor.options.iter().map(|o| o.key.as_str()).collect();
-        assert_eq!(keys, ["mode", "firstPage", "lastPage", "removeHeadersFooters"]);
+        assert_eq!(keys, ["mode", "images", "firstPage", "lastPage", "removeHeadersFooters"]);
         assert!(matches!(descriptor.options[0].kind, OptionKind::Choice { .. }));
-        assert!(matches!(descriptor.options[1].kind, OptionKind::Number { step: 1.0, .. }));
+        assert!(matches!(descriptor.options[2].kind, OptionKind::Number { step: 1.0, .. }));
     }
 
     #[test]
@@ -407,6 +504,55 @@ mod tests {
         assert!(mode_chosen(&as_notes).is_empty());
         let text = std::fs::read_to_string(&as_notes.outputs[0]).unwrap();
         assert!(text.contains("# "), "{text}");
+    }
+
+    fn codes(outcome: &ConversionOutcome) -> Vec<&str> {
+        outcome.report.warnings.iter().map(|w| w.code.as_str()).collect()
+    }
+
+    #[test]
+    fn a_pdf_with_a_photo_gets_its_own_folder_with_the_image_inside() {
+        let Some(tool) = tool() else { return };
+        let out = TempDir::new("pdf-md-photo");
+        let outcome = run(&tool, &request(&fixture("images.pdf"), out.path(), &[])).unwrap();
+
+        let md = PathBuf::from(&outcome.outputs[0]);
+        assert_eq!(md.parent().unwrap(), out.path().join("images"));
+        let text = std::fs::read_to_string(&md).unwrap();
+        assert!(text.contains("![p1-1](images_images/img-1.png)"), "{text}");
+        assert!(out.path().join("images/images_images/img-1.png").is_file());
+        // the repeated logo was dropped, and the report says so
+        assert!(codes(&outcome).contains(&"imagesSkipped"), "{:?}", codes(&outcome));
+        // a second conversion does not mix with the first
+        let again = run(&tool, &request(&fixture("images.pdf"), out.path(), &[])).unwrap();
+        assert_eq!(PathBuf::from(&again.outputs[0]).parent().unwrap(), out.path().join("images (1)"));
+    }
+
+    #[test]
+    fn without_images_the_result_stays_loose() {
+        let Some(tool) = tool() else { return };
+        let out = TempDir::new("pdf-md-loose");
+        let outcome = run(&tool, &request(&fixture("images.pdf"), out.path(), &[("images", OptionValue::Text("none".into()))])).unwrap();
+        assert_eq!(PathBuf::from(&outcome.outputs[0]), out.path().join("images.md"));
+        assert!(!out.path().join("images_images").exists());
+    }
+
+    #[test]
+    fn a_slide_with_a_diagram_gets_a_picture_only_in_auto_mode() {
+        let Some(tool) = tool() else { return };
+        let out = TempDir::new("pdf-md-diagram");
+
+        let auto = run(&tool, &request(&fixture("diagram.pdf"), out.path(), &[])).unwrap();
+        let warning = auto.report.warnings.iter().find(|w| w.code == "pageRendered").expect("pageRendered");
+        assert_eq!(warning.page, Some(1));
+        let md = PathBuf::from(&auto.outputs[0]);
+        assert!(std::fs::read_to_string(&md).unwrap().contains("![p1](diagram_images/img-1.png)"));
+        assert!(md.parent().unwrap().join("diagram_images/img-1.png").is_file());
+
+        let embedded =
+            run(&tool, &request(&fixture("diagram.pdf"), out.path(), &[("images", OptionValue::Text("embedded".into()))])).unwrap();
+        assert!(!codes(&embedded).contains(&"pageRendered"));
+        assert!(PathBuf::from(&embedded.outputs[0]).ends_with("diagram.md"));
     }
 
     #[test]
