@@ -1,6 +1,7 @@
 //! Tauri shell: thin commands over [`jobs::JobManager`], and the composition root.
 
 mod jobs;
+mod reveal;
 
 use std::sync::Arc;
 
@@ -45,6 +46,25 @@ fn cancel_job(jobs: State<'_, JobManager>, id: String) {
     jobs.cancel(&id);
 }
 
+/// The user's Downloads folder, where results go unless another one is chosen. `None` when
+/// the system does not know it: the window then says that results go next to the originals.
+#[tauri::command]
+fn default_output_dir(app: AppHandle) -> Option<String> {
+    app.path().download_dir().ok().map(|p| p.to_string_lossy().into_owned())
+}
+
+/// Opens the file manager with `path` selected. Only results of this session's jobs.
+#[tauri::command]
+fn reveal_in_folder(jobs: State<'_, JobManager>, path: String) -> Result<(), ConversionError> {
+    reveal::reveal(&path, &jobs.list())
+}
+
+/// Whether `path` is an existing folder (a remembered destination may be gone).
+#[tauri::command]
+fn folder_exists(path: String) -> bool {
+    std::path::Path::new(&path).is_dir()
+}
+
 /// Where the tools look for the PDFium library: the packaged resource folder of the app
 /// first, then the usual places next to the executable (see `ToolsConfig::new`).
 fn tools_config(app: &AppHandle) -> ToolsConfig {
@@ -72,7 +92,15 @@ pub fn run() {
             app.manage(JobManager::new(Registry::new(&tools_config(app.handle())), sink));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_tools, list_jobs, start_jobs, cancel_job])
+        .invoke_handler(tauri::generate_handler![
+            list_tools,
+            list_jobs,
+            start_jobs,
+            cancel_job,
+            default_output_dir,
+            reveal_in_folder,
+            folder_exists
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

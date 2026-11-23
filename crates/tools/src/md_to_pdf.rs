@@ -32,6 +32,7 @@ impl Tool for MdToPdf {
                 OptionSpec {
                     key: "paper".to_string(),
                     label: "option.paper".to_string(),
+                    help: Some("option.paper.help".to_string()),
                     kind: OptionKind::Choice {
                         choices: vec![
                             OptionChoice { value: "a4".into(), label: "paper.a4".into() },
@@ -43,11 +44,13 @@ impl Tool for MdToPdf {
                 OptionSpec {
                     key: "marginCm".to_string(),
                     label: "option.margin".to_string(),
+                    help: Some("option.margin.help".to_string()),
                     kind: OptionKind::Number { min: 1.0, max: 5.0, default: 2.2, step: 0.1 },
                 },
                 OptionSpec {
                     key: "fontSizePt".to_string(),
                     label: "option.fontSize".to_string(),
+                    help: Some("option.fontSize.help".to_string()),
                     kind: OptionKind::Number { min: 8.0, max: 16.0, default: 11.0, step: 0.5 },
                 },
             ],

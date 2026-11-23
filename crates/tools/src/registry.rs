@@ -52,6 +52,16 @@ mod tests {
     }
 
     #[test]
+    fn every_option_explains_itself() {
+        for descriptor in Registry::default().descriptors() {
+            for option in &descriptor.options {
+                let help = option.help.as_deref().unwrap_or("");
+                assert_eq!(help, format!("{}.help", option.label), "{}: {}", descriptor.id, option.key);
+            }
+        }
+    }
+
+    #[test]
     fn descriptor_ids_are_unique() {
         let ids: Vec<String> = Registry::default().descriptors().into_iter().map(|d| d.id).collect();
         let mut sorted = ids.clone();

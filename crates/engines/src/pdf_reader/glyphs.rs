@@ -130,6 +130,9 @@ pub fn extract_pages_with(
                     continue;
                 }
                 let Some(ch) = c.unicode_char() else { continue };
+                // PDFium writes U+0002 for the hyphen that ends a line broken inside a word.
+                // Keep it as a hyphen: `join_lines` removes it again when the word is rejoined.
+                let ch = if ch == '' { '-' } else { ch };
                 if ch.is_control() {
                     continue;
                 }

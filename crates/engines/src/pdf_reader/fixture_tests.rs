@@ -45,7 +45,7 @@ fn assert_size(actual: f32, expected: f32) {
 #[test]
 fn committed_pdfs_match_their_typst_sources() {
     let Some(location) = test_support::pdfium() else { return };
-    for name in ["slides", "notes", "twocol", "table"] {
+    for name in ["slides", "notes", "twocol", "table", "clauses"] {
         let source = std::fs::read_to_string(fixtures_dir().join(format!("{name}.typ"))).unwrap();
         let fresh = compile_typst(&source, HashMap::new()).expect("fixture source compiles");
         let committed = lines_of(&location, PdfSource::Path(&fixtures_dir().join(format!("{name}.pdf"))));
@@ -220,4 +220,93 @@ fn slides_convert_to_the_golden_markdown() {
     }
     let expected = std::fs::read_to_string(&golden).expect("golden missing: run with UPDATE_GOLDEN=1");
     assert_eq!(expected.replace("\r\n", "\n"), actual);
+}
+
+/// Compares `actual` with `fixtures/pdf/<name>`; `UPDATE_GOLDEN=1` rewrites the golden.
+#[track_caller]
+fn assert_golden(name: &str, actual: &str) {
+    let golden = fixtures_dir().join(name);
+    if std::env::var("UPDATE_GOLDEN").is_ok_and(|v| !v.is_empty() && v != "0") {
+        std::fs::write(&golden, actual).unwrap();
+    }
+    let expected = std::fs::read_to_string(&golden).expect("golden missing: run with UPDATE_GOLDEN=1");
+    assert_eq!(expected.replace("\r\n", "\n"), actual);
+}
+
+#[test]
+fn notes_convert_to_the_golden_markdown() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+    use mpt_core::BlockKind;
+
+    let Some(pages) = read("notes.pdf") else { return };
+    let (document, warnings) = notes_to_document(&pages, NoteOptions::default());
+    assert!(warnings.is_empty(), "{warnings:?}");
+
+    // the running header and the page numbers are gone, and the structure is found
+    let levels: Vec<u8> = document
+        .blocks
+        .iter()
+        .filter_map(|b| match &b.kind {
+            BlockKind::Heading { level, .. } => Some(*level),
+            _ => None,
+        })
+        .collect();
+    assert!(levels.contains(&1) && levels.contains(&2) && levels.contains(&3), "{levels:?}");
+    assert!(document.blocks.iter().any(|b| matches!(b.kind, BlockKind::List { .. })));
+    assert!(document.blocks.iter().any(|b| matches!(b.kind, BlockKind::CodeBlock { .. })));
+
+    assert_golden("notes.expected.md", &to_markdown(&document, "notes_images").text);
+}
+
+#[test]
+fn two_columns_are_read_one_after_the_other() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+
+    let Some(pages) = read("twocol.pdf") else { return };
+    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    let text = to_markdown(&document, "twocol_images").text;
+
+    // every paragraph of the source is the same sentence: if lines of both columns were
+    // mixed, a paragraph would not start with it
+    let starts = "Este texto de prueba ocupa dos columnas";
+    let paragraphs: Vec<&str> = text.split("\n\n").map(str::trim).filter(|p| !p.is_empty() && !p.starts_with('#')).collect();
+    let odd: Vec<&&str> = paragraphs.iter().filter(|p| !p.starts_with(starts)).collect();
+    assert!(odd.is_empty(), "{odd:?}");
+    assert_golden("twocol.expected.md", &text);
+}
+
+#[test]
+fn a_table_read_as_notes_keeps_all_its_text() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+
+    // tables are not recognised yet (subphase 2D): the golden documents the current limit,
+    // where every row comes out as a line of plain text
+    let Some(pages) = read("table.pdf") else { return };
+    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    let text = to_markdown(&document, "table_images").text;
+    for cell in ["Muestra", "Ensayo 3", "Gamma", "7,01"] {
+        assert!(text.contains(cell), "{cell} missing: {text}");
+    }
+    assert_golden("table.expected.md", &text);
+}
+
+#[test]
+fn numbered_clauses_with_an_indented_first_line_stay_whole() {
+    use crate::markdown_writer::to_markdown;
+    use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
+
+    let Some(pages) = read("clauses.pdf") else { return };
+    let (document, _) = notes_to_document(&pages, NoteOptions::default());
+    let text = to_markdown(&document, "clauses_images").text;
+
+    // each clause is one list item: its wrapped lines are not cut off as paragraphs
+    assert!(text.contains("1. El número total de créditos establecido en los planes de estudios"), "{text}");
+    assert!(text.contains("2. El número de créditos de cada titulación será distribuido"), "{text}");
+    assert!(!text.contains("\n\nplanes de estudios"), "{text}");
+    // the ordinal letter and what follows it stay in the sentence
+    assert!(text.contains("149.1.30.a de la Constitución española"), "{text}");
+    assert_golden("clauses.expected.md", &text);
 }

@@ -37,6 +37,8 @@ pub struct OptionSpec {
     pub key: String,
     /// Label identifier the UI translates (not display text).
     pub label: String,
+    /// Translation key of a short explanation shown under the control.
+    pub help: Option<String>,
     pub kind: OptionKind,
 }
 

@@ -139,14 +139,14 @@ fn slide_blocks(lines: &[&Line], body: f32) -> Vec<Block> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Marker {
-    ordered: bool,
+pub(super) struct Marker {
+    pub(super) ordered: bool,
     /// The number written in an ordered marker (`3.` -> 3).
-    number: Option<u64>,
+    pub(super) number: Option<u64>,
 }
 
 /// Splits a leading bullet marker (`•`, `- `, `1.`) from the text.
-fn split_marker(text: &str) -> (Option<Marker>, &str) {
+pub(super) fn split_marker(text: &str) -> (Option<Marker>, &str) {
     let mut chars = text.chars();
     let Some(first) = chars.next() else { return (None, text) };
     let rest = chars.as_str();
@@ -177,12 +177,12 @@ struct Entry {
 }
 
 /// A bullet being collected: its text lines and where its marker sits.
-struct Bullet {
-    marker: Marker,
-    left: f32,
+pub(super) struct Bullet {
+    pub(super) marker: Marker,
+    pub(super) left: f32,
     /// Where the text of the first line starts: wrapped lines are aligned with it.
-    text_left: f32,
-    lines: Vec<String>,
+    pub(super) text_left: f32,
+    pub(super) lines: Vec<String>,
 }
 
 /// Turns the body lines of one slide into paragraphs and lists, in reading order.
@@ -277,7 +277,7 @@ fn reading_order<'a>(lines: &[&'a Line]) -> Vec<&'a Line> {
 /// `text` is the line's text after accent recomposition, while `line.glyphs` are not
 /// recomposed. They agree on the marker because it is at the start of the line; an accent
 /// glyph before the marker would shift the count.
-fn text_start(line: &Line, text: &str, rest: &str) -> f32 {
+pub(super) fn text_start(line: &Line, text: &str, rest: &str) -> f32 {
     let consumed = text.chars().count() - rest.chars().count();
     let marker_glyphs = text.chars().take(consumed).filter(|c| !c.is_whitespace()).count();
     line.glyphs
@@ -379,7 +379,7 @@ fn bullet_levels(bullets: &[Bullet]) -> Vec<usize> {
 
 /// Builds the (nested) lists of a run of bullets. More than one comes out when the kind of
 /// marker changes at the same level (numbers, then bullets).
-fn list_blocks(bullets: Vec<Bullet>) -> Vec<Block> {
+pub(super) fn list_blocks(bullets: Vec<Bullet>) -> Vec<Block> {
     let levels = bullet_levels(&bullets);
     let mut next = 0;
     let mut lists = Vec::new();
