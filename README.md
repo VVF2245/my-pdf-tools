@@ -1,83 +1,126 @@
-# my-pdf-tools
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/outmark-banner-dark@2x.png">
+  <img alt="OutMark: PDF ↔ Markdown and more file tools" src="assets/outmark-banner-light@2x.png">
+</picture>
 
-A local desktop app for working with PDF files. Everything runs on your own machine: no network, no telemetry, your documents never leave your computer.
+<p align="center">
+  <a href="https://github.com/VVF2245/outmark/actions/workflows/ci.yml"><img alt="CI status" src="https://github.com/VVF2245/outmark/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="LICENSE"><img alt="License: AGPL-3.0" src="https://img.shields.io/badge/license-AGPL--3.0-EA6A12"></a>
+  <img alt="Platforms: Windows and macOS" src="https://img.shields.io/badge/platforms-Windows%20%7C%20macOS-1E293B">
+</p>
 
-> **Status: early development (pre-alpha).** Markdown → PDF works end to end, and PDF → Markdown works for slide decks and for flowing notes; the next step is the release. There is nothing to download yet.
+<p align="center">
+  <strong>Turn PDFs into clean Markdown, and Markdown into polished PDFs, without your files ever leaving your computer.</strong>
+</p>
 
-## What it does
+---
 
-The first version (V1) focuses on converting between PDF and Markdown:
+OutMark is a desktop app for people who work with notes, slides and documents. Drop in your files, choose a few options and get the result in your Downloads folder. There is no account, no upload, no network access and no telemetry.
 
-- **Markdown → PDF** *(available)*: drag `.md` files onto the window (or pick them with the "Buscar ficheros…" button), choose paper size, margins and font size, and get a PDF with the same typography on every operating system. Supports headings, emphasis, lists (nested and task lists), code blocks, tables, quotes, links and local images.
-- **PDF → Markdown**, with two modes:
-  - *Slides* *(available)*: every page becomes a `##` section with the slide's title and its bullets as nested lists. Footers and slide numbers repeated on many slides are dropped, and you can convert a range of pages. Slides that hold a diagram drawn with shapes get a picture of the whole page.
-  - *Notes* *(available)*: flowing text from digital PDFs. Headings come from the font sizes (the distinct sizes above the body text give levels 1 to 6), paragraphs from the vertical gaps, and monospaced runs become code blocks. Multi-column pages are read column by column (checked with LaTeX files; not with Word or InDesign ones). Running headers, footers and page numbers are dropped. Known limits: bold and italic are not kept, list markers drawn as graphics (LaTeX bullets) are lost, and tables with merged or multi-line cells, or that cross a page, are not understood.
-  - *Tables* (notes mode only): consecutive lines that split into the same columns become a Markdown table, the first row being the header; numeric columns are right-aligned. A table with empty cells is converted and reported (`tableLowConfidence`); text that looks like a table but is unclear stays as text and is reported (`tableCandidate`). Indexes with dot leaders and program listings with line numbers are not tables. In slides mode tables are **not** converted: a slide that seems to hold one gets a `tableInSlide` warning (future work).
-  - *Images*: embedded pictures are saved as PNG in `<name>_images/` and linked after the text of their page (not at their exact position). Icons, tiny pictures and images repeated on many pages (logos) are dropped, and the report says how many. A conversion with images goes into a folder of its own. Pictures nested inside a form XObject (some LaTeX figures) are not found yet. The *Images* option can turn this off or limit it to embedded pictures.
-  - The *Document type* option picks the mode; "auto" chooses by page orientation (mostly portrait: notes, otherwise slides) and the report says which one it used.
+> **Status: first release in preparation (v0.1.0).** There is nothing to download yet. You can [build it from source](#development). The interface is in Spanish for now.
 
-Each conversion produces a short report with non-fatal warnings (for example, a page with no usable text, or which mode was chosen automatically), because PDF → Markdown is heuristic and lossy by nature.
+## Features
 
-The long-term vision is a local "all-in-one" PDF toolbox where new tools can be added without breaking the existing ones.
+### PDF → Markdown
 
-## Not in V1
+| You have | You get |
+| --- | --- |
+| **Notes, articles and books** | Headings, paragraphs, lists, code blocks and multi-column text in reading order |
+| **Slide decks** | One section per slide, with its title and nested bullets |
+| **Tables** | Markdown tables, with numeric columns aligned |
+| **Images** | PNG files linked from the document; logos and tiny icons are filtered out |
+| **Diagrams on slides** | A picture of the whole slide, so the drawing is not lost |
 
-OCR (scanned or handwritten PDFs), machine-learning models, other formats such as DOCX or HTML, auto-update, and a web or hosted version.
+OutMark detects whether a PDF is a document or a slide deck, and you can always choose yourself. Repeated headers, footers and page numbers can be removed, and you can convert only a range of pages.
 
-## Tech stack
+### Markdown → PDF
 
-- [Tauri 2](https://tauri.app/) for the desktop shell
-- React + TypeScript (Vite) for the UI
-- Rust for the conversion engine
-- [PDFium](https://pdfium.googlesource.com/pdfium/) (the engine of Chromium's PDF viewer), loaded as a shared library, to read PDFs
-- [Typst](https://typst.app/), embedded with bundled fonts, to write PDFs
+Choose the paper size, margins and font size, and get a PDF with the same typography on every computer. It supports headings, emphasis, nested and task lists, code blocks, tables, quotes, links and local images.
 
-The engine is built around a neutral intermediate document model, so each format needs one reader and one writer instead of a converter for every pair. Markdown → PDF needs no external programs and gives reproducible output.
+### Built for batches
 
-## Project layout
+- Convert many files at once in a single queue
+- See the progress of each file and of the whole batch
+- Cancel a file or a batch, and retry the ones that failed
+- Copy a plain-text report of what happened
+- Choose the destination folder, and jump to any result from the app
+- Existing files are never overwritten
 
+### Honest about its limits
+
+Reading structure from a PDF is heuristic, so OutMark tells you what it could not do instead of hiding it. Each conversion comes with a report: an unclear table, skipped images, or the mode it chose.
+
+## Current limitations
+
+- **No OCR:** scanned or handwritten PDFs have no text to extract.
+- **Formatting:** bold and italic are not kept when reading a PDF.
+- **Tables:** merged cells, multi-line cells and tables that cross a page are not understood. Tables on slides stay as text, with a warning.
+- **Images:** they are placed after the text of their page, not at their exact position. Some figures embedded by LaTeX are not found.
+- **Columns:** Markdown has no columns, so multi-column text becomes a single column in reading order. This is checked with LaTeX and official gazette PDFs, not with Word or InDesign files.
+- **Unsigned builds:** Windows and macOS show a security warning the first time you open the app.
+- **macOS:** Apple Silicon only for now.
+
+## How it works
+
+```mermaid
+flowchart LR
+    PDF[PDF] -->|PDFium| IR[Document model]
+    MD[Markdown] -->|pulldown-cmark| IR
+    IR -->|Markdown writer| OUTMD[.md and images]
+    IR -->|Typst| OUTPDF[.pdf]
 ```
+
+Every format is read into, or written from, one neutral document model, so a new format needs one reader and one writer instead of a converter for every pair. A new tool is a module registered in the engine, and the interface draws itself from the tool's description.
+
+Built with [Tauri 2](https://tauri.app/), [Rust](https://www.rust-lang.org/), [React](https://react.dev/) and TypeScript, [PDFium](https://pdfium.googlesource.com/pdfium/) to read PDFs and an embedded [Typst](https://typst.app/) to write them.
+
+```text
 crates/core      domain: document model, Tool contract, errors, jobs (depends on nothing)
 crates/engines   adapters: Markdown reader and writer, PDF reader (PDFium), PDF writer (Typst)
 crates/tools     use cases (md_to_pdf, pdf_to_md) and the tool registry
-src-tauri        desktop shell: Tauri commands, job manager, wiring
-src              React UI (drawn from the tool descriptors the engine returns)
-fixtures         sample documents and golden files (fixtures/pdf: PDFs written in Typst by us)
+src-tauri        desktop shell: Tauri commands, job queue, wiring
+src              React interface, drawn from the tool descriptors
+fixtures         sample documents and golden files
 licenses         third-party license texts shipped with the program
 scripts          get-pdfium.ps1: downloads PDFium with a pinned checksum
 ```
 
-Dependencies only point one way: `core ← engines ← tools ← src-tauri`. A new tool is a module in `crates/tools` registered in `Registry::new()`; the UI picks it up from its descriptor.
+Dependencies only point one way: `core ← engines ← tools ← src-tauri`.
 
 ## Development
 
-Requirements: [Rust](https://rustup.rs/) (stable), [Node.js](https://nodejs.org/), PowerShell (only to run the download script below: Windows already has `powershell`; on macOS install `pwsh` with `brew install --cask powershell`) and the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your platform.
+You need [Rust](https://rustup.rs/) (stable), [Node.js](https://nodejs.org/) and the [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your platform. The PDFium script needs PowerShell: Windows includes it, and on macOS you can install it with `brew install --cask powershell`.
 
-**PDFium.** Reading PDFs needs its shared library, which is not part of the crates. Download it once (the script checks a pinned SHA-256):
+```bash
+git clone https://github.com/VVF2245/outmark.git
+cd outmark
+npm install
+```
+
+Download PDFium once (the script verifies a pinned SHA-256):
 
 ```powershell
-# Windows (PowerShell; -Platform win-x64 is the default)
+# Windows
 powershell -File scripts/get-pdfium.ps1
 
-# macOS (needs pwsh, see above)
+# macOS
 pwsh scripts/get-pdfium.ps1 -Platform mac-univ
 ```
 
-It is unpacked into `pdfium/` (ignored by git). The tests and `npm run tauri dev` find it there. Without it, the tests that need PDFium are skipped locally (and fail on CI); set `PDFIUM_DIR` to use a library from somewhere else.
-
-Run the tests (this also regenerates the TypeScript types under `src/shared/ipc/bindings/`, which are committed):
+Run the app and the tests:
 
 ```bash
+npm run tauri dev
 cargo test --workspace
-```
-
-Frontend tests (Node's built-in runner, no extra dependency; they are not type-checked, because that would need `@types/node`):
-
-```bash
 npm test
 ```
 
-Golden files (expected output) are compared exactly. After an intended change, regenerate them and review the diff:
+`cargo test` also regenerates the TypeScript types in `src/shared/ipc/bindings/`, which are committed. Without PDFium, the tests that need it are skipped locally and fail on CI; set `PDFIUM_DIR` to use a library from another folder.
+
+<details>
+<summary>Golden files and fixtures</summary>
+
+Expected outputs are compared exactly. After an intended change, regenerate them and review the diff:
 
 ```bash
 UPDATE_GOLDEN=1 cargo test --workspace            # bash / zsh
@@ -85,24 +128,24 @@ UPDATE_GOLDEN=1 cargo test --workspace            # bash / zsh
 
 ```powershell
 $env:UPDATE_GOLDEN = "1"; cargo test --workspace  # PowerShell
-Remove-Item Env:UPDATE_GOLDEN                      # then clear it
+Remove-Item Env:UPDATE_GOLDEN
 ```
 
-The PDFs in `fixtures/pdf/` come from the `.typ` files next to them: edit those and run `cargo run -p mpt-engines --example gen_fixtures`.
-
-Run the app:
+The PDFs in `fixtures/pdf/` come from the `.typ` files next to them. Edit those and run:
 
 ```bash
-npm install
-npm run tauri dev
+cargo run -p outmark-engines --example gen_fixtures
 ```
 
-Try it with `fixtures/md-sample/sample.md` (Markdown → PDF) and `fixtures/pdf/slides.pdf` (PDF → Markdown). Results go to your Downloads folder unless you pick another one with *Change…* (the choice is remembered), and never overwrite an existing file (`slides.md`, then `slides (1).md`). If the system cannot tell where Downloads is, the window says so and each result is written next to its original. *Show in folder* opens the file manager on a result. Conversions run one after another in a single queue: a second batch waits behind the first. Each batch shows its progress, can be cancelled as a whole, and can be copied as a plain-text report; a failed or cancelled file can be retried, and finished jobs can be cleared.
+</details>
 
-**Release build.** The program is a folder, not a single file: PDFium goes next to the executable. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) has the exact steps, which come down to:
+<details>
+<summary>Release builds</summary>
+
+The program is a folder, not a single file, because PDFium ships next to the executable. [`ci.yml`](.github/workflows/ci.yml) has the exact steps:
 
 ```bash
-# Windows: builds target/release/my-pdf-tools.exe. Ship it in a folder together with
+# Windows: builds target/release/OutMark.exe. Ship it in a folder together with
 #   pdfium/win-x64/bin/pdfium.dll, LICENSE, NOTICE, licenses/ and pdfium/win-x64/LICENSE
 npx tauri build --no-bundle
 
@@ -110,12 +153,14 @@ npx tauri build --no-bundle
 npx tauri build --bundles app --config src-tauri/ci/macos-pdfium.conf.json
 ```
 
-## Platforms
+</details>
 
-Windows and macOS. Builds are currently unsigned, so the operating system will show a security warning on first launch. The macOS build is for Apple Silicon only for now; an Intel Mac cannot open it.
+## Contributing
+
+Issues and pull requests are welcome. Contributions are accepted under the same license as the project.
 
 ## License
 
-Copyright (C) 2026 Luis Hernández Cuadrado. Licensed under the [AGPL-3.0](LICENSE). Contributions are welcome and are accepted under the same license.
+Copyright (C) 2026 Luis Hernández Cuadrado. Licensed under the [GNU AGPL-3.0](LICENSE).
 
-Third-party components keep their own licenses; see [NOTICE](NOTICE) and the [licenses](licenses) folder.
+Third-party components keep their own licenses: see [NOTICE](NOTICE) and the [licenses](licenses) folder.
