@@ -16,6 +16,7 @@ use mpt_core::{Block, BlockKind, ConversionWarning, Document, Inline};
 use super::clean::{MarginBands, body_size, join_lines, repeated_margin_lines, strip_dot_leaders};
 use super::lines::{Line, PageLines};
 use super::slides::{Bullet, list_blocks, split_marker, text_start};
+use super::tables::{self, TableSpan};
 
 /// Options of the notes conversion.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -69,8 +70,8 @@ const DEFAULT_PITCH: f32 = 1.2;
 
 /// Converts running text into a [`Document`].
 ///
-/// Notes mode decides nothing it has to warn about, so the warnings are empty; the pair keeps
-/// the shape of `slides_to_document`.
+/// Warnings: `tableLowConfidence` for a table with missing cells, `tableCandidate` for a run of
+/// lines that looks like a table but was left as text.
 pub fn notes_to_document(pages: &[PageLines], options: NoteOptions) -> (Document, Vec<ConversionWarning>) {
     let body = body_size(pages);
     let flags = if options.remove_furniture {
@@ -99,14 +100,61 @@ pub fn notes_to_document(pages: &[PageLines], options: NoteOptions) -> (Document
     if items.is_empty() {
         return (Document::default(), Vec::new());
     }
-    let items = merge_inline_runs(items, body);
+    let pitch = line_pitch(&items, body);
 
-    let sizes = heading_sizes(&items, body);
-    let mut builder = Builder::new(line_pitch(&items, body));
-    for item in &items {
+    // Tables first: their lines are cells, not text, so they are not merged or counted.
+    let detection = {
+        let lines: Vec<&Line> = items.iter().map(|i| i.line).collect();
+        tables::detect(&lines, pitch)
+    };
+    let mut rest: Vec<Item> = Vec::new();
+    let mut placed: Vec<(usize, TableSpan)> = Vec::new();
+    let mut chunk: Vec<Item> = Vec::new();
+    let mut upcoming = detection.tables.into_iter().peekable();
+    for (index, item) in items.into_iter().enumerate() {
+        if let Some(table) = upcoming.peek() {
+            if index == table.start {
+                rest.extend(merge_inline_runs(std::mem::take(&mut chunk), body));
+                placed.push((rest.len(), table.clone()));
+            }
+            if index >= table.start {
+                let end = table.end;
+                if index + 1 == end {
+                    upcoming.next();
+                }
+                continue;
+            }
+        }
+        chunk.push(item);
+    }
+    rest.extend(merge_inline_runs(chunk, body));
+
+    let sizes = heading_sizes(&rest, body);
+    // the pitch of the running text: table rows are spaced differently
+    let mut builder = Builder::new(line_pitch(&rest, body));
+    let mut next_table = 0;
+    for (k, item) in rest.iter().enumerate() {
+        while next_table < placed.len() && placed[next_table].0 == k {
+            builder.push_table(&placed[next_table].1);
+            next_table += 1;
+        }
         builder.push(item, classify(item, body, &sizes));
     }
-    (Document { blocks: builder.finish(), ..Default::default() }, Vec::new())
+    for (_, table) in &placed[next_table..] {
+        builder.push_table(table);
+    }
+
+    let mut warnings: Vec<ConversionWarning> = placed
+        .iter()
+        .filter(|(_, t)| t.low_confidence)
+        .map(|(_, t)| warning("tableLowConfidence", t.page))
+        .collect();
+    warnings.extend(detection.candidates.iter().map(|page| warning("tableCandidate", *page)));
+    (Document { blocks: builder.finish(), ..Default::default() }, warnings)
+}
+
+fn warning(code: &str, page: u32) -> ConversionWarning {
+    ConversionWarning { code: code.to_string(), detail: String::new(), page: Some(page) }
 }
 
 struct Item<'a> {
@@ -347,6 +395,19 @@ impl Builder {
         self.blocks
     }
 
+    /// Emits a table, closing whatever was open before it.
+    fn push_table(&mut self, table: &TableSpan) {
+        self.flush_heading();
+        self.flush_code();
+        self.flush_bullets();
+        self.flush_paragraph();
+        let cell = |text: &String| vec![Inline::Text(text.clone())];
+        let header = table.header.iter().map(cell).collect();
+        let rows = table.rows.iter().map(|row| row.iter().map(cell).collect()).collect();
+        self.emit(BlockKind::Table { aligns: table.aligns.clone(), header, rows }, table.page);
+        self.previous = Some(Previous { page: table.page, baseline: table.last_baseline });
+    }
+
     fn push(&mut self, item: &Item, kind: Kind) {
         let line = item.line;
         match kind {
@@ -555,6 +616,59 @@ mod tests {
         let (document, _) = notes_to_document(&[page], NoteOptions::default());
         assert_eq!(document.blocks.len(), 1);
         assert!(matches!(document.blocks[0].kind, BlockKind::Paragraph(_)));
+    }
+
+    /// A line made of cells (text, left x) with wide gaps between them.
+    fn cells_line(cells: &[(&str, f32)], baseline: f32) -> Line {
+        use crate::pdf_reader::glyphs::Glyph;
+        let size = 10.0;
+        let mut glyphs = Vec::new();
+        for (text, left) in cells {
+            for (i, ch) in text.chars().enumerate() {
+                glyphs.push(Glyph {
+                    ch,
+                    left: left + i as f32 * size * 0.5,
+                    right: left + (i as f32 + 1.0) * size * 0.5,
+                    bottom: baseline,
+                    top: baseline + size,
+                    size,
+                    font: Arc::from("F"),
+                    mono: false,
+                });
+            }
+        }
+        Line::from_glyphs(1, glyphs).unwrap()
+    }
+
+    fn table_page(rows: Vec<Line>) -> PageLines {
+        PageLines { number: 1, width: 595.0, height: 842.0, bottom: 0.0, lines: rows }
+    }
+
+    #[test]
+    fn a_table_becomes_a_block_and_a_missing_cell_is_reported_with_its_page() {
+        let page = table_page(vec![
+            cells_line(&[("Muestra", 50.0), ("Ensayo 1", 150.0), ("Ensayo 2", 250.0)], 700.0),
+            cells_line(&[("Alfa", 50.0), ("0,69", 170.0), ("0,51", 270.0)], 686.0),
+            cells_line(&[("Beta", 50.0), ("1,18", 270.0)], 672.0),
+            cells_line(&[("Gamma", 50.0), ("3,40", 170.0), ("3,35", 270.0)], 658.0),
+        ]);
+        let (document, warnings) = notes_to_document(&[page], NoteOptions::default());
+        assert_eq!(document.blocks.len(), 1);
+        assert!(matches!(document.blocks[0].kind, BlockKind::Table { .. }));
+        assert_eq!(document.blocks[0].page, Some(1));
+        assert_eq!(warnings.len(), 1);
+        assert_eq!((warnings[0].code.as_str(), warnings[0].page), ("tableLowConfidence", Some(1)));
+    }
+
+    #[test]
+    fn a_run_of_two_rows_stays_text_and_is_reported() {
+        let page = table_page(vec![
+            cells_line(&[("Alfa", 50.0), ("0,69", 200.0)], 700.0),
+            cells_line(&[("Beta", 50.0), ("1,20", 200.0)], 686.0),
+        ]);
+        let (document, warnings) = notes_to_document(&[page], NoteOptions::default());
+        assert!(document.blocks.iter().all(|b| !matches!(b.kind, BlockKind::Table { .. })));
+        assert_eq!(warnings.iter().map(|w| w.code.as_str()).collect::<Vec<_>>(), ["tableCandidate"]);
     }
 
     #[test]

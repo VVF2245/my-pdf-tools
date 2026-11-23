@@ -10,6 +10,7 @@ pub mod lines;
 pub mod notes;
 pub mod pdfium;
 pub mod slides;
+pub mod tables;
 #[doc(hidden)]
 pub mod testing;
 
