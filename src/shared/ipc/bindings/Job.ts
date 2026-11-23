@@ -5,4 +5,8 @@ export type Job = { id: string, toolId: string,
 /**
  * Input file this job works on.
  */
-input: string, status: JobStatus, };
+input: string, 
+/**
+ * Jobs created by one request share a batch id.
+ */
+batch: string, status: JobStatus, };

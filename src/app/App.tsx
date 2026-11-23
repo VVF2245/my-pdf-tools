@@ -12,7 +12,7 @@ export default function App() {
   const [tools, setTools] = useState<ToolDescriptor[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const { jobs, upsert } = useJobs();
+  const { jobs, upsert, replaceAll } = useJobs();
 
   useEffect(() => {
     listTools()
@@ -39,7 +39,7 @@ export default function App() {
           <ConvertPanel tool={selected} onJobs={(created) => created.forEach(upsert)} />
         </>
       )}
-      <JobList jobs={jobs} />
+      <JobList jobs={jobs} onReplace={replaceAll} />
     </main>
   );
 }

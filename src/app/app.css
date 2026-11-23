@@ -126,3 +126,8 @@ button.link {
 .job progress { width: 100%; margin-top: 6px; }
 .job-output { margin: 6px 0 0; word-break: break-all; }
 .job-warnings { margin-top: 6px; color: var(--muted); }
+
+.jobs-head { display: flex; justify-content: space-between; align-items: baseline; }
+.batch { margin-bottom: 16px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.batch-head { display: flex; gap: 12px; align-items: baseline; }
+.batch progress { width: 100%; }

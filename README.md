@@ -97,7 +97,7 @@ npm install
 npm run tauri dev
 ```
 
-Try it with `fixtures/md-sample/sample.md` (Markdown → PDF) and `fixtures/pdf/slides.pdf` (PDF → Markdown). Results go to your Downloads folder unless you pick another one with *Change…* (the choice is remembered), and never overwrite an existing file (`slides.md`, then `slides (1).md`). If the system cannot tell where Downloads is, the window says so and each result is written next to its original. *Show in folder* opens the file manager on a result.
+Try it with `fixtures/md-sample/sample.md` (Markdown → PDF) and `fixtures/pdf/slides.pdf` (PDF → Markdown). Results go to your Downloads folder unless you pick another one with *Change…* (the choice is remembered), and never overwrite an existing file (`slides.md`, then `slides (1).md`). If the system cannot tell where Downloads is, the window says so and each result is written next to its original. *Show in folder* opens the file manager on a result. Conversions run one after another in a single queue: a second batch waits behind the first. Each batch shows its progress, can be cancelled as a whole, and can be copied as a plain-text report; a failed or cancelled file can be retried, and finished jobs can be cleared.
 
 **Release build.** The program is a folder, not a single file: PDFium goes next to the executable. [`.github/workflows/ci.yml`](.github/workflows/ci.yml) has the exact steps, which come down to:
 

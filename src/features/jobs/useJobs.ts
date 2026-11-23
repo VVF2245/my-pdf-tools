@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { listJobs, onJobUpdated, type Job } from "../../shared/ipc";
+import { mergeJob, mergeList } from "../../shared/jobs";
 
 /** Keeps the list of jobs in sync with the engine (initial list + live updates). */
 export function useJobs() {
@@ -10,10 +11,17 @@ export function useJobs() {
       const index = current.findIndex((j) => j.id === job.id);
       if (index === -1) return [...current, job];
       const next = current.slice();
-      next[index] = job;
+      // updates can arrive out of order: see `mergeJob`
+      next[index] = mergeJob(current[index], job);
       return next;
     });
   }, []);
+
+  /** Replaces the whole list (after a retry or a clear, the engine sends the full list). */
+  const replaceAll = useCallback(
+    (list: Job[]) => setJobs((current) => mergeList(current, list)),
+    [],
+  );
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
@@ -31,5 +39,5 @@ export function useJobs() {
     };
   }, [upsert]);
 
-  return { jobs, upsert };
+  return { jobs, upsert, replaceAll };
 }

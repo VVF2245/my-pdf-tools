@@ -58,6 +58,18 @@ export const es: Record<string, string> = {
   "jobs.cancel": "Cancelar",
   "jobs.output": "Guardado en",
   "jobs.reveal": "Mostrar en la carpeta",
+  "jobs.retry": "Reintentar",
+  "jobs.clearFinished": "Quitar terminados",
+  "jobs.actionFailed": "No se pudo completar la acción",
+
+  "batch.title": "Lote {n}",
+  "batch.progress": "{done} de {total}",
+  "batch.finished": "Terminado",
+  "batch.cancel": "Cancelar lote",
+  "batch.copy": "Copiar informe",
+  "batch.copied": "Informe copiado al portapapeles.",
+  "batch.copyFailed": "No se pudo copiar el informe",
+  "batch.summary": "{succeeded} bien · {withWarnings} con avisos · {failed} con error · {cancelled} cancelados",
 
   "output.saveIn": "Guardar en",
   "output.change": "Cambiar…",

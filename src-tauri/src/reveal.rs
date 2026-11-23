@@ -70,7 +70,7 @@ mod tests {
     use super::*;
 
     fn job_with(status: JobStatus) -> Job {
-        Job { id: "1".into(), tool_id: "t".into(), input: "in".into(), status }
+        Job { id: "1".into(), tool_id: "t".into(), input: "in".into(), batch: "b".into(), status }
     }
 
     #[test]

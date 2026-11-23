@@ -46,6 +46,21 @@ fn cancel_job(jobs: State<'_, JobManager>, id: String) {
     jobs.cancel(&id);
 }
 
+#[tauri::command]
+fn cancel_batch(jobs: State<'_, JobManager>, batch: String) {
+    jobs.cancel_batch(&batch);
+}
+
+#[tauri::command]
+fn retry_job(jobs: State<'_, JobManager>, id: String) -> Result<Vec<Job>, ConversionError> {
+    jobs.retry(&id)
+}
+
+#[tauri::command]
+fn clear_finished(jobs: State<'_, JobManager>) -> Vec<Job> {
+    jobs.clear_finished()
+}
+
 /// The user's Downloads folder, where results go unless another one is chosen. `None` when
 /// the system does not know it: the window then says that results go next to the originals.
 #[tauri::command]
@@ -97,6 +112,9 @@ pub fn run() {
             list_jobs,
             start_jobs,
             cancel_job,
+            cancel_batch,
+            retry_job,
+            clear_finished,
             default_output_dir,
             reveal_in_folder,
             folder_exists

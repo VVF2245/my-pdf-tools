@@ -16,6 +16,15 @@ export const startJobs = (request: ConversionRequest) =>
 
 export const cancelJob = (id: string) => invoke<void>("cancel_job", { id });
 
+/** Cancels every unfinished job of a batch. */
+export const cancelBatch = (batch: string) => invoke<void>("cancel_batch", { batch });
+
+/** Queues a new copy of a failed or cancelled job; returns the full list of jobs. */
+export const retryJob = (id: string) => invoke<Job[]>("retry_job", { id });
+
+/** Removes the finished jobs; returns the full list of jobs. */
+export const clearFinished = () => invoke<Job[]>("clear_finished");
+
 /** Called on every job state change. */
 export const onJobUpdated = (callback: (job: Job) => void): Promise<UnlistenFn> =>
   listen<Job>("job-updated", (event) => callback(event.payload));

@@ -35,6 +35,8 @@ pub struct Job {
     pub tool_id: String,
     /// Input file this job works on.
     pub input: String,
+    /// Jobs created by one request share a batch id.
+    pub batch: String,
     pub status: JobStatus,
 }
 
