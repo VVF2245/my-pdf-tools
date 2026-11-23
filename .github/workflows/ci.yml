@@ -1,15 +1,20 @@
 name: ci
 
-# Tests and builds on Windows and macOS. It only uploads workflow artifacts;
-# it does NOT create a release (releases come in Phase 4).
+# Tests and builds on Windows and macOS, and uploads the result as workflow artifacts.
+# A tag vX.Y.Z (or vX.Y.Z-rc.N, to rehearse) also creates a DRAFT GitHub release with them:
+# it is never published automatically.
 #
 # PDFium (the PDF reading engine) is a shared library that is not part of the crates:
 # it is downloaded with a pinned checksum, used by the tests, and shipped next to the app.
 on:
   push:
     branches: [main, "feat/**", "spikes/**"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 # A newer commit on the same branch makes the older run pointless.
 concurrency:
@@ -58,6 +63,14 @@ jobs:
           targets: ${{ matrix.rust_targets }}
 
       - uses: swatinem/rust-cache@v2
+
+      # Before the long build: a tag that does not match the manifests is a mistake.
+      - name: Release tag matches the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/check-version.mjs "$TAG"
 
       - run: npm ci
 
@@ -211,3 +224,47 @@ jobs:
         with:
           name: OutMark-macos
           path: OutMark-macos.zip
+
+  # Only for tags, and only if both builds passed. The release stays a draft until a person
+  # reviews it and presses Publish.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package the downloads
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          mkdir -p upload stage
+          mv artifacts/OutMark-windows stage/OutMark
+          (cd stage && zip -qr "../upload/OutMark-$version-windows-x64.zip" OutMark)
+          # already zipped on the Mac with ditto, which keeps the signature and symlinks
+          cp artifacts/OutMark-macos/OutMark-macos.zip "upload/OutMark-$version-macos-universal.zip"
+          (cd upload && sha256sum OutMark-* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Create the draft release
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          base="${version%%-*}"
+          # a re-run replaces the files of the draft instead of creating another one
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" upload/* --clobber
+          else
+            prerelease=()
+            if [ "$version" != "$base" ]; then prerelease=(--prerelease); fi
+            gh release create "$TAG" upload/* --draft --verify-tag "${prerelease[@]}" \
+              --title "OutMark $version" --notes-file "packaging/release-notes-$base.md"
+          fi
