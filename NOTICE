@@ -1,4 +1,4 @@
-my-pdf-tools
+OutMark
 Copyright (C) 2026 Luis Hernández Cuadrado
 
 This program is free software: you can redistribute it and/or modify it under
@@ -16,7 +16,7 @@ with this program (see the LICENSE file). If not, see
 Third-party components
 ----------------------
 
-my-pdf-tools includes or loads the components below, each under its own license.
+OutMark includes or loads the components below, each under its own license.
 The license texts shipped with the program are in the `licenses/` folder.
 
   PDFium (the PDF reading engine, loaded as pdfium.dll / libpdfium.dylib)

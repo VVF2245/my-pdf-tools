@@ -1,9 +1,9 @@
-//! Developer helper: `cargo run -p mpt-engines --example md_to_pdf -- <in.md> <out.pdf>`
+//! Developer helper: `cargo run -p outmark-engines --example md_to_pdf -- <in.md> <out.pdf>`
 
 use std::path::Path;
 
-use mpt_engines::markdown::parse_markdown;
-use mpt_engines::pdf::{PdfOptions, render_pdf};
+use outmark_engines::markdown::parse_markdown;
+use outmark_engines::pdf::{PdfOptions, render_pdf};
 
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();

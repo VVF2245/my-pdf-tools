@@ -1,4 +1,4 @@
-// Types generated from Rust by ts-rs (run `cargo test -p mpt-core` to regenerate).
+// Types generated from Rust by ts-rs (run `cargo test -p outmark-core` to regenerate).
 export type { ConversionError } from "./bindings/ConversionError";
 export type { ConversionOutcome } from "./bindings/ConversionOutcome";
 export type { ConversionReport } from "./bindings/ConversionReport";

@@ -3,12 +3,12 @@
 use std::io::Write;
 use std::path::Path;
 
-use mpt_core::{
+use outmark_core::{
     CancelToken, ConversionError, ConversionOutcome, ConversionReport, ConversionRequest,
     OptionChoice, OptionKind, OptionSpec, Progress, Tool, ToolDescriptor,
 };
-use mpt_engines::markdown::parse_markdown;
-use mpt_engines::pdf::{Paper, PdfOptions, render_pdf};
+use outmark_engines::markdown::parse_markdown;
+use outmark_engines::pdf::{Paper, PdfOptions, render_pdf};
 
 use crate::paths::{check_extension, claim_path, output_path};
 
@@ -118,7 +118,7 @@ fn pdf_options(request: &ConversionRequest) -> PdfOptions {
 mod tests {
     use super::*;
     use crate::test_util::TempDir;
-    use mpt_core::{NoProgress, OptionValue};
+    use outmark_core::{NoProgress, OptionValue};
     use std::collections::BTreeMap;
 
     fn request(inputs: Vec<String>, output_dir: Option<String>) -> ConversionRequest {

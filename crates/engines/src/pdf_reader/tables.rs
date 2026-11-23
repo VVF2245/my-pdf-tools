@@ -11,7 +11,7 @@
 //! Limits: a table that crosses a page is two tables, a cell with several lines is several
 //! rows, and merged cells are not understood. The first row is taken as the header.
 
-use mpt_core::TableAlign;
+use outmark_core::TableAlign;
 
 use super::clean::{fix_loose_accents, strip_dot_leaders};
 use super::glyphs::Glyph;

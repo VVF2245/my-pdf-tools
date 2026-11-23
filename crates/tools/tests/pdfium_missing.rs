@@ -3,9 +3,9 @@
 
 use std::path::PathBuf;
 
-use mpt_core::{CancelToken, ConversionError, ConversionRequest, NoProgress};
-use mpt_engines::pdf_reader::PdfiumLocation;
-use mpt_tools::{Registry, ToolsConfig};
+use outmark_core::{CancelToken, ConversionError, ConversionRequest, NoProgress};
+use outmark_engines::pdf_reader::PdfiumLocation;
+use outmark_tools::{Registry, ToolsConfig};
 
 #[test]
 fn without_the_pdfium_library_the_tool_reports_engine_unavailable() {

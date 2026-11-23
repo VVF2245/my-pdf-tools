@@ -1,8 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "my-pdf-tools",
+  "productName": "OutMark",
+  "mainBinaryName": "OutMark",
   "version": "0.1.0",
-  "identifier": "dev.mypdftools.app",
+  "identifier": "io.github.vvf2245.outmark",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "my-pdf-tools",
+        "title": "OutMark",
         "width": 800,
         "height": 600
       }

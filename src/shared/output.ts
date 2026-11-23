@@ -1,6 +1,6 @@
 // Where converted files go. Pure functions (the storage is passed in) so `npm test` covers them.
 
-const KEY = "mpt.outputDir";
+const KEY = "outmark.outputDir";
 
 /** The part of `Storage` used here. */
 export interface KeyValueStore {

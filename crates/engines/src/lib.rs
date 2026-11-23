@@ -1,8 +1,8 @@
-//! Format adapters. They depend on `mpt-core` and implement the IR conversions.
+//! Format adapters. They depend on `outmark-core` and implement the IR conversions.
 //!
-//! - [`markdown`]: Markdown text -> [`mpt_core::Document`] (reader).
-//! - [`markdown_writer`]: [`mpt_core::Document`] -> Markdown text (writer).
-//! - [`pdf`]: [`mpt_core::Document`] -> PDF bytes through an embedded Typst (writer).
+//! - [`markdown`]: Markdown text -> [`outmark_core::Document`] (reader).
+//! - [`markdown_writer`]: [`outmark_core::Document`] -> Markdown text (writer).
+//! - [`pdf`]: [`outmark_core::Document`] -> PDF bytes through an embedded Typst (writer).
 //! - [`pdf_reader`]: PDF bytes -> positioned glyphs through PDFium (reader, work in progress).
 
 pub mod markdown;

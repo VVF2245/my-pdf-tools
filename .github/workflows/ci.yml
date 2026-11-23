@@ -94,9 +94,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $out = "my-pdf-tools-windows"
+          $out = "OutMark-windows"
           New-Item -ItemType Directory $out | Out-Null
-          Copy-Item target/release/my-pdf-tools.exe $out
+          Copy-Item target/release/OutMark.exe $out
           Copy-Item pdfium/win-x64/bin/pdfium.dll $out
           Copy-Item LICENSE, NOTICE $out
           New-Item -ItemType Directory "$out/licenses" | Out-Null
@@ -111,28 +111,28 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          out=my-pdf-tools-macos
+          out=OutMark-macos
           mkdir -p "$out/licenses"
-          ditto target/release/bundle/macos/my-pdf-tools.app "$out/my-pdf-tools.app"
-          test -f "$out/my-pdf-tools.app/Contents/Frameworks/libpdfium.dylib" \
+          ditto target/release/bundle/macos/OutMark.app "$out/OutMark.app"
+          test -f "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib" \
             || { echo "libpdfium.dylib is missing from the app"; exit 1; }
           cp LICENSE NOTICE "$out/"
           cp licenses/* "$out/licenses/"
           cp pdfium/mac-univ/LICENSE "$out/licenses/PDFium-LICENSE.txt"
           cp -R pdfium/mac-univ/licenses "$out/licenses/pdfium-third-party"
-          codesign --verify --deep --strict --verbose=2 "$out/my-pdf-tools.app"
+          codesign --verify --deep --strict --verbose=2 "$out/OutMark.app"
           # An app signed with the hardened runtime refuses to load a library signed by
           # someone else. Tauri turns it on by default, so src-tauri/ci/macos-pdfium.conf.json
           # turns it off (it only matters for notarized apps, which this one is not): fail if
           # it ever comes back. A notarized build would need it on plus the entitlement
           # com.apple.security.cs.disable-library-validation, or the library signed by us.
-          codesign --display --verbose=4 "$out/my-pdf-tools.app" 2>&1 | tee signature.txt
+          codesign --display --verbose=4 "$out/OutMark.app" 2>&1 | tee signature.txt
           if grep -q "flags=.*runtime" signature.txt; then
             echo "hardened runtime is on: libpdfium.dylib would not load"; exit 1
           fi
-          codesign --display --verbose=2 "$out/my-pdf-tools.app/Contents/Frameworks/libpdfium.dylib" 2>&1 || true
+          codesign --display --verbose=2 "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib" 2>&1 || true
           # ditto keeps permissions and symlinks, unlike generic zip tools
-          ditto -c -k --sequesterRsrc --keepParent "$out" my-pdf-tools-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent "$out" OutMark-macos.zip
 
       # Does a program laid out like the shipped app find PDFium by itself? `smoke` converts a
       # PDF with the default lookup, with PDFIUM_DIR unset. (The macOS check runs on a copy of
@@ -141,10 +141,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          cargo build -p mpt-tools --example smoke
+          cargo build -p outmark-tools --example smoke
           New-Item -ItemType Directory smoke-check | Out-Null
           Copy-Item target/debug/examples/smoke.exe smoke-check
-          Copy-Item my-pdf-tools-windows/pdfium.dll smoke-check
+          Copy-Item OutMark-windows/pdfium.dll smoke-check
           Remove-Item Env:PDFIUM_DIR
           & ./smoke-check/smoke.exe fixtures/pdf/slides.pdf
           if ($LASTEXITCODE -ne 0) { throw "the packaged layout cannot read a PDF" }
@@ -153,22 +153,22 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          cargo build -p mpt-tools --example smoke
+          cargo build -p outmark-tools --example smoke
           mkdir smoke-check
-          ditto my-pdf-tools-macos/my-pdf-tools.app smoke-check/my-pdf-tools.app
-          cp target/debug/examples/smoke smoke-check/my-pdf-tools.app/Contents/MacOS/smoke
-          env -u PDFIUM_DIR smoke-check/my-pdf-tools.app/Contents/MacOS/smoke fixtures/pdf/slides.pdf
+          ditto OutMark-macos/OutMark.app smoke-check/OutMark.app
+          cp target/debug/examples/smoke smoke-check/OutMark.app/Contents/MacOS/smoke
+          env -u PDFIUM_DIR smoke-check/OutMark.app/Contents/MacOS/smoke fixtures/pdf/slides.pdf
 
       - name: Upload Windows folder
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: my-pdf-tools-windows
-          path: my-pdf-tools-windows
+          name: OutMark-windows
+          path: OutMark-windows
 
       - name: Upload macOS zip
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: my-pdf-tools-macos
-          path: my-pdf-tools-macos.zip
+          name: OutMark-macos
+          path: OutMark-macos.zip

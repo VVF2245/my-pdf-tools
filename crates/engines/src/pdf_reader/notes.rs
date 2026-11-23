@@ -11,7 +11,7 @@
 
 use std::sync::Arc;
 
-use mpt_core::{Block, BlockKind, ConversionWarning, Document, Inline};
+use outmark_core::{Block, BlockKind, ConversionWarning, Document, Inline};
 
 use super::clean::{MarginBands, body_size, join_lines, repeated_margin_lines, strip_dot_leaders};
 use super::lines::{Line, PageLines};

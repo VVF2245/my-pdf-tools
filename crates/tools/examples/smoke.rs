@@ -12,12 +12,12 @@
 
 use std::path::PathBuf;
 
-use mpt_core::{CancelToken, ConversionRequest, NoProgress};
-use mpt_tools::Registry;
+use outmark_core::{CancelToken, ConversionRequest, NoProgress};
+use outmark_tools::Registry;
 
 fn main() {
     let pdf = std::env::args().nth(1).expect("usage: smoke <file.pdf>");
-    let out = std::env::temp_dir().join(format!("mpt-smoke-{}", std::process::id()));
+    let out = std::env::temp_dir().join(format!("outmark-smoke-{}", std::process::id()));
     std::fs::create_dir_all(&out).expect("temp dir");
 
     let request = ConversionRequest {

@@ -1,11 +1,11 @@
 //! Developer helper: compiles every `fixtures/pdf/*.typ` into a PDF next to it.
 //!
-//! `cargo run -p mpt-engines --example gen_fixtures`
+//! `cargo run -p outmark-engines --example gen_fixtures`
 
 use std::path::PathBuf;
 
-use mpt_engines::pdf::compile_typst;
-use mpt_engines::pdf_reader::images::fixture_assets;
+use outmark_engines::pdf::compile_typst;
+use outmark_engines::pdf_reader::images::fixture_assets;
 
 fn main() {
     let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/pdf");

@@ -3,7 +3,7 @@
 //! Text is emitted as Typst string literals (`#"..."`), so no markup character
 //! (`#`, `$`, `*`, `_`...) ever needs escaping.
 
-use mpt_core::{Asset, Block, BlockKind, Document, Inline, TableAlign};
+use outmark_core::{Asset, Block, BlockKind, Document, Inline, TableAlign};
 
 use super::PdfOptions;
 
@@ -189,7 +189,7 @@ fn wrap(open: &str, inner: &[Inline], out: &mut String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mpt_core::{AssetId, Metadata};
+    use outmark_core::{AssetId, Metadata};
 
     fn doc(blocks: Vec<BlockKind>) -> Document {
         Document { blocks: blocks.into_iter().map(Block::new).collect(), ..Default::default() }

@@ -4,7 +4,7 @@ use std::iter::Peekable;
 use std::path::Path;
 use std::vec::IntoIter;
 
-use mpt_core::{
+use outmark_core::{
     Asset, AssetId, Block, BlockKind, ConversionWarning, Document, Inline, ListItem, TableAlign,
 };
 use pulldown_cmark::{Alignment, CodeBlockKind, Event, HeadingLevel, Options, Parser, Tag, TagEnd};

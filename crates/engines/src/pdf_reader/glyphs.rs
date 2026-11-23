@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
-use mpt_core::ConversionError;
+use outmark_core::ConversionError;
 use pdfium_render::prelude::PdfPageIndex;
 
 use super::pdfium::{PdfSource, PdfiumLocation, with_document};

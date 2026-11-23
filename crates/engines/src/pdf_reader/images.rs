@@ -14,7 +14,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 
 use image::{DynamicImage, ImageFormat};
-use mpt_core::{Asset, AssetId, Block, BlockKind, ConversionError, Document};
+use outmark_core::{Asset, AssetId, Block, BlockKind, ConversionError, Document};
 use pdfium_render::prelude::*;
 
 use super::pdfium::{PdfSource, PdfiumLocation, with_document};
@@ -278,7 +278,7 @@ fn image_block(asset: AssetId, page: u32, k: usize) -> Block {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mpt_core::Inline;
+    use outmark_core::Inline;
 
     fn image(png: &[u8], side_px: u32, side_pt: f32) -> PageImage {
         PageImage {

@@ -12,11 +12,11 @@ use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 
-use mpt_core::{
+use outmark_core::{
     CancelToken, ConversionError, ConversionRequest, Job, JobStatus, Progress, Tool,
     ToolDescriptor,
 };
-use mpt_tools::Registry;
+use outmark_tools::Registry;
 
 /// Receives every job state change (the Tauri shell turns it into an event).
 ///
@@ -306,7 +306,7 @@ fn run_one(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use mpt_core::ConversionOutcome;
+    use outmark_core::ConversionOutcome;
     use std::collections::BTreeMap as Map;
     use std::time::{Duration, Instant};
 
