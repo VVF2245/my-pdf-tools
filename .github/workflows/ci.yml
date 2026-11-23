@@ -122,6 +122,7 @@ jobs:
           Copy-Item target/release/OutMark.exe $out
           Copy-Item pdfium/win-x64/bin/pdfium.dll $out
           Copy-Item LICENSE, NOTICE, THIRD-PARTY-LICENSES.html $out
+          Copy-Item packaging/LEEME-Windows.txt "$out/LEEME.txt"
           New-Item -ItemType Directory "$out/licenses" | Out-Null
           Copy-Item licenses/* "$out/licenses/"
           Copy-Item pdfium/win-x64/LICENSE "$out/licenses/PDFium-LICENSE.txt"
@@ -140,6 +141,7 @@ jobs:
           test -f "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib" \
             || { echo "libpdfium.dylib is missing from the app"; exit 1; }
           cp LICENSE NOTICE THIRD-PARTY-LICENSES.html "$out/"
+          cp packaging/LEEME-Mac.txt "$out/LEEME.txt"
           cp licenses/* "$out/licenses/"
           cp pdfium/mac-univ/LICENSE "$out/licenses/PDFium-LICENSE.txt"
           cp -R pdfium/mac-univ/licenses "$out/licenses/pdfium-third-party"

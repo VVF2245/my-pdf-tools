@@ -1,0 +1,76 @@
+﻿OutMark para Windows
+====================
+
+OutMark convierte PDF a Markdown y Markdown a PDF en tu ordenador.
+No necesita internet ni una cuenta, y tus documentos no salen de tu equipo.
+
+
+CÓMO ABRIRLO
+------------
+
+1. Si todavía estás viendo el contenido del .zip, sal de ahí: haz clic
+   derecho sobre el fichero .zip y elige "Extraer todo...".
+   Si lo abres sin extraerlo, el programa no funcionará.
+
+2. Entra en la carpeta extraída y haz doble clic en "OutMark".
+
+3. La primera vez, Windows puede mostrar el aviso
+   "Windows protegió su PC". Sale porque OutMark no tiene una firma
+   de pago, no porque se haya detectado un virus. Para continuar:
+     - Pulsa "Más información".
+     - Pulsa "Ejecutar de todas formas".
+   Hazlo solo si te ha llegado de alguien de confianza o de la página
+   oficial del proyecto (la dirección está al final de este texto).
+
+
+IMPORTANTE
+----------
+
+- No saques "OutMark" de su carpeta ni borres "pdfium.dll": lo necesita
+  para leer los PDF. Puedes mover la carpeta entera a donde quieras.
+
+- Para tenerlo en el escritorio: clic derecho sobre "OutMark",
+  "Mostrar más opciones", "Enviar a" y "Escritorio (crear acceso directo)".
+
+
+CÓMO SE USA
+-----------
+
+1. Arriba, elige qué quieres hacer: "PDF → Markdown" o "Markdown → PDF".
+2. Arrastra tus ficheros a la ventana o pulsa "Buscar ficheros...".
+3. Si quieres, cambia las opciones. Cada una explica para qué sirve.
+4. Pulsa "Convertir".
+5. Cuando termine, pulsa "Mostrar en la carpeta" para ver el resultado.
+
+Los resultados se guardan en tu carpeta Descargas. Puedes elegir otra con
+"Cambiar...". OutMark nunca borra ni modifica el fichero original, y nunca
+sobrescribe un fichero que ya exista.
+
+
+SI ALGO NO VA BIEN
+------------------
+
+- "El documento no tiene texto extraíble": es un PDF escaneado o una foto.
+  OutMark todavía no sabe leer texto dentro de imágenes.
+
+- El resultado no queda perfecto: un PDF no guarda bien su estructura,
+  así que la conversión es aproximada. Revisa los "Avisos" de cada fichero.
+
+- La ventana sale en blanco o el programa no se abre: instala
+  "Microsoft Edge WebView2 Runtime", gratis, desde la página de Microsoft:
+  https://developer.microsoft.com/microsoft-edge/webview2/
+  Windows 11 ya lo trae.
+
+
+PARA DESINSTALARLO
+------------------
+
+Borra la carpeta de OutMark. No instala nada más en tu ordenador.
+
+
+MÁS INFORMACIÓN
+---------------
+
+Proyecto y código fuente: https://github.com/VVF2245/outmark
+OutMark es software libre bajo la licencia AGPL-3.0 (fichero LICENSE).
+Los componentes de terceros están en THIRD-PARTY-LICENSES.html y NOTICE.
