@@ -33,15 +33,18 @@ jobs:
           - os: macos-latest
             pdfium: mac-univ
             pdfium_lib: lib
-            # The .app only, and only on arm64 (the runner's architecture): an Intel Mac
-            # cannot open it, although the PDFium library itself is universal.
+            # The .app only. It is universal (Intel and Apple Silicon) on main, on release tags
+            # and on manual runs; other branches build arm64 only, to save time.
             # libpdfium.dylib goes inside the .app through a CI-only config, so a normal
             # build on a Mac does not need the library to be downloaded.
             tauri_args: "--bundles app --config src-tauri/ci/macos-pdfium.conf.json"
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     env:
       # where the tests look for PDFium
       PDFIUM_DIR: ${{ github.workspace }}/pdfium/${{ matrix.pdfium }}/${{ matrix.pdfium_lib }}
+      # empty for a build for the runner's own architecture
+      MAC_TARGET: ${{ matrix.os == 'macos-latest' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') && 'universal-apple-darwin' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +54,8 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
 
       - uses: swatinem/rust-cache@v2
 
@@ -107,7 +112,7 @@ jobs:
           node scripts/npm-licenses.mjs THIRD-PARTY-LICENSES.html
 
       - name: Build the app
-        run: npx tauri build ${{ matrix.tauri_args }}
+        run: npx tauri build ${{ matrix.tauri_args }} ${{ env.MAC_TARGET && format('--target {0}', env.MAC_TARGET) || '' }}
         env:
           # macOS: ad-hoc signature (no Apple Developer account). Ignored on Windows.
           APPLE_SIGNING_IDENTITY: "-"
@@ -137,9 +142,18 @@ jobs:
           set -euo pipefail
           out=OutMark-macos
           mkdir -p "$out/licenses"
-          ditto target/release/bundle/macos/OutMark.app "$out/OutMark.app"
+          ditto "target/${MAC_TARGET:+$MAC_TARGET/}release/bundle/macos/OutMark.app" "$out/OutMark.app"
           test -f "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib" \
             || { echo "libpdfium.dylib is missing from the app"; exit 1; }
+          # A universal app needs both architectures in the program and in the library.
+          if [ -n "$MAC_TARGET" ]; then
+            for file in "$out/OutMark.app/Contents/MacOS/OutMark" "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib"; do
+              archs=$(lipo -archs "$file")
+              echo "$file: $archs"
+              case "$archs" in *x86_64*) ;; *) echo "x86_64 is missing"; exit 1 ;; esac
+              case "$archs" in *arm64*) ;; *) echo "arm64 is missing"; exit 1 ;; esac
+            done
+          fi
           cp LICENSE NOTICE THIRD-PARTY-LICENSES.html "$out/"
           cp packaging/LEEME-Mac.txt "$out/LEEME.txt"
           cp licenses/* "$out/licenses/"
