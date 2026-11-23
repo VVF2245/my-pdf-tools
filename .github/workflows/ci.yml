@@ -92,11 +92,11 @@ jobs:
           path: |
             ~/.cargo/bin/cargo-about
             ~/.cargo/bin/cargo-about.exe
-          key: cargo-about-0.9.3-${{ runner.os }}-${{ runner.arch }}
+          key: cargo-about-0.9.3-cli-${{ runner.os }}-${{ runner.arch }}
 
       - name: Install cargo-about
         if: steps.about-cache.outputs.cache-hit != 'true'
-        run: cargo install cargo-about --version 0.9.3 --locked
+        run: cargo install cargo-about --version 0.9.3 --locked --features cli
 
       - name: Generate the third-party licenses
         shell: bash
