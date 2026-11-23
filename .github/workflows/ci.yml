@@ -101,7 +101,9 @@ jobs:
       - name: Generate the third-party licenses
         shell: bash
         run: |
-          cargo about generate --fail --output-file THIRD-PARTY-LICENSES.html about.hbs
+          # every platform's crates, so the licenses are read from them without network
+          cargo fetch --locked
+          cargo about generate --workspace --frozen --fail --output-file THIRD-PARTY-LICENSES.html about.hbs
           node scripts/npm-licenses.mjs THIRD-PARTY-LICENSES.html
 
       - name: Build the app

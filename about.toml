@@ -30,6 +30,3 @@ ignore-dev-dependencies = true
 
 # OutMark's own crates are covered by its LICENSE file.
 private = { ignore = true }
-
-# Licenses are read from the crates themselves, not from an online service.
-no-clearly-defined = true
