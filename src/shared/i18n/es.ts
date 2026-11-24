@@ -1,7 +1,7 @@
 // Spanish dictionary. Keys come from the Rust side (tool descriptors, error codes,
 // warning codes), so the engine never ships display text.
 export const es: Record<string, string> = {
-  "app.title": "my-pdf-tools",
+  "app.title": "OutMark",
   "app.tagline": "Tus PDFs nunca salen de este equipo.",
 
   "tool.mdToPdf.name": "Markdown → PDF",

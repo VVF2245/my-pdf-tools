@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Generated for the release builds
+THIRD-PARTY-LICENSES.html
+
 # Private fixtures (real PDFs with third-party copyright / personal data)
 fixtures/private/
 

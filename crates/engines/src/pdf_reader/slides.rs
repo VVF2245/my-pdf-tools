@@ -4,7 +4,7 @@
 //! Titles are found by position, not by size: in many decks title and bullets are almost
 //! the same size (18 pt vs 16-18 pt), so the size histogram would not tell them apart.
 
-use mpt_core::{Block, BlockKind, ConversionWarning, Document, Inline, ListItem};
+use outmark_core::{Block, BlockKind, ConversionWarning, Document, Inline, ListItem};
 
 use super::clean::{MarginBands, body_size, fix_loose_accents, join_lines, repeated_margin_lines};
 use super::lines::{Line, PageLines};
@@ -25,7 +25,7 @@ impl Default for SlideOptions {
 /// Whether the lines of a slide look like a table. Two text boxes side by side also split
 /// into columns, so only three or more columns, or numbers, count.
 fn holds_a_table(lines: &[&Line], body: f32) -> bool {
-    use mpt_core::TableAlign;
+    use outmark_core::TableAlign;
     super::tables::detect(lines, DEFAULT_PITCH * body)
         .tables
         .iter()

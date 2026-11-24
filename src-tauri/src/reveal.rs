@@ -3,7 +3,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use mpt_core::{ConversionError, Job, JobStatus};
+use outmark_core::{ConversionError, Job, JobStatus};
 
 /// Whether `path` is a result written by one of `jobs`: nothing else may be revealed, so a
 /// script in the window cannot point the file manager at any file on disk.
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn only_results_of_finished_jobs_may_be_revealed() {
-        use mpt_core::ConversionOutcome;
+        use outmark_core::ConversionOutcome;
         let done = job_with(JobStatus::Succeeded {
             outcome: ConversionOutcome { outputs: vec!["a/out.pdf".into()], ..Default::default() },
         });

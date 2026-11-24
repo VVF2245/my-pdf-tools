@@ -2,7 +2,7 @@
 
 use std::path::PathBuf;
 
-use mpt_engines::pdf_reader::PdfiumLocation;
+use outmark_engines::pdf_reader::PdfiumLocation;
 
 /// Settings the tools need from the application that hosts them.
 #[derive(Debug, Clone)]

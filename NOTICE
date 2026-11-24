@@ -1,4 +1,4 @@
-my-pdf-tools
+OutMark
 Copyright (C) 2026 Luis Hernández Cuadrado
 
 This program is free software: you can redistribute it and/or modify it under
@@ -16,7 +16,7 @@ with this program (see the LICENSE file). If not, see
 Third-party components
 ----------------------
 
-my-pdf-tools includes or loads the components below, each under its own license.
+OutMark includes or loads the components below, each under its own license.
 The license texts shipped with the program are in the `licenses/` folder.
 
   PDFium (the PDF reading engine, loaded as pdfium.dll / libpdfium.dylib)
@@ -41,5 +41,14 @@ The license texts shipped with the program are in the `licenses/` folder.
   unicode-normalization                     (MIT OR Apache-2.0) AND Unicode-3.0
   React and the other npm dependencies      MIT (see package-lock.json)
 
-This list covers the direct dependencies. The complete list, with the license text of
-every transitive dependency, will be generated for the release builds.
+This list covers the main components. The complete list, with the license text of every
+Rust crate and npm package in the program, is in THIRD-PARTY-LICENSES.html, next to this
+file in every release.
+
+Source code
+-----------
+
+The complete source code of OutMark is at https://github.com/VVF2245/outmark. Each release
+has a tag with the exact source it was built from. The source of the third-party
+components, including those under the MPL-2.0, is available from the links in
+THIRD-PARTY-LICENSES.html.

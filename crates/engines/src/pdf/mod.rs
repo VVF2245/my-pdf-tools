@@ -5,7 +5,7 @@ mod world;
 
 use std::collections::HashMap;
 
-use mpt_core::{ConversionError, Document};
+use outmark_core::{ConversionError, Document};
 use typst::diag::SourceDiagnostic;
 use typst::foundations::Bytes;
 use typst_layout::PagedDocument;

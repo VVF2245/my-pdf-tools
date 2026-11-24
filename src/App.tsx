@@ -1,7 +1,7 @@
 function App() {
   return (
     <main>
-      <h1>my-pdf-tools</h1>
+      <h1>OutMark</h1>
     </main>
   );
 }

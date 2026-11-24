@@ -1,7 +1,7 @@
 //! PDF -> Markdown tool.
 //!
-//! Two modes: slides (every page is a slide, see `mpt_engines::pdf_reader::slides`) and
-//! notes (running text, see `mpt_engines::pdf_reader::notes`). The `mode` option picks one;
+//! Two modes: slides (every page is a slide, see `outmark_engines::pdf_reader::slides`) and
+//! notes (running text, see `outmark_engines::pdf_reader::notes`). The `mode` option picks one;
 //! `auto` looks at the page orientation and reports what it chose.
 //!
 //! Limit: the glyphs of the whole page range are held in memory at once (about 60 bytes
@@ -12,17 +12,17 @@
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use mpt_core::{
+use outmark_core::{
     CancelToken, ConversionError, ConversionOutcome, ConversionReport, ConversionRequest,
     ConversionWarning, OptionChoice, OptionKind, OptionSpec, Progress, Tool, ToolDescriptor,
 };
-use mpt_engines::markdown_writer::{MarkdownOutput, to_markdown};
-use mpt_engines::pdf_reader::images::{
+use outmark_engines::markdown_writer::{MarkdownOutput, to_markdown};
+use outmark_engines::pdf_reader::images::{
     ExtractedMedia, GRAPHIC_PAGE_SHAPES, RENDER_WIDTH_PX, add_media, extract_media, filter_images, render_pages,
 };
-use mpt_engines::pdf_reader::notes::{NoteOptions, notes_to_document};
-use mpt_engines::pdf_reader::slides::{SlideOptions, slides_to_document};
-use mpt_engines::pdf_reader::{PageLines, PdfSource, PdfiumLocation, extract_pages_with, group_lines};
+use outmark_engines::pdf_reader::notes::{NoteOptions, notes_to_document};
+use outmark_engines::pdf_reader::slides::{SlideOptions, slides_to_document};
+use outmark_engines::pdf_reader::{PageLines, PdfSource, PdfiumLocation, extract_pages_with, group_lines};
 
 use crate::config::ToolsConfig;
 use crate::paths::{check_extension, claim_dir, claim_path, output_path};
@@ -306,7 +306,7 @@ impl Tool for PdfToMd {
 mod tests {
     use super::*;
     use crate::test_util::{TempDir, pdfium};
-    use mpt_core::{NoProgress, OptionValue};
+    use outmark_core::{NoProgress, OptionValue};
     use std::collections::BTreeMap;
     use std::path::PathBuf;
 
@@ -409,7 +409,7 @@ mod tests {
         let Some(tool) = tool() else { return };
         let out = TempDir::new("pdf-md-empty");
         // a valid PDF with one blank page and no text at all (like a scan without OCR)
-        let pdf = mpt_engines::pdf::compile_typst("#set page(paper: \"a4\")\n#v(1cm)\n", Default::default()).unwrap();
+        let pdf = outmark_engines::pdf::compile_typst("#set page(paper: \"a4\")\n#v(1cm)\n", Default::default()).unwrap();
         let input = out.path().join("blank.pdf");
         std::fs::write(&input, pdf).unwrap();
         let req = request(&input, out.path(), &[]);

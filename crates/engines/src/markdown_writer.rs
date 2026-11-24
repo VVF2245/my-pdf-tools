@@ -1,7 +1,7 @@
 //! Markdown writer: [`Document`] -> Markdown text (CommonMark + GFM tables, task lists,
 //! strikethrough). Images are returned separately so the caller can save them to disk.
 
-use mpt_core::{Asset, BlockKind, Document, Inline, TableAlign};
+use outmark_core::{Asset, BlockKind, Document, Inline, TableAlign};
 
 /// An image the Markdown refers to, to be saved at `path` (relative to the `.md` file).
 #[derive(Debug, Clone, PartialEq)]
@@ -193,7 +193,7 @@ impl Writer<'_> {
         }
     }
 
-    fn list(&mut self, ordered: bool, start: Option<u64>, items: &[mpt_core::ListItem]) -> String {
+    fn list(&mut self, ordered: bool, start: Option<u64>, items: &[outmark_core::ListItem]) -> String {
         let first_number = start.unwrap_or(1);
         let mut out: Vec<String> = Vec::new();
         for (index, item) in items.iter().enumerate() {
@@ -274,7 +274,7 @@ fn indent_after_first(text: &str, pad: &str) -> String {
 mod tests {
     use super::*;
     use crate::markdown::parse_markdown;
-    use mpt_core::{AssetId, Block, ListItem};
+    use outmark_core::{AssetId, Block, ListItem};
 
     fn doc(blocks: Vec<BlockKind>) -> Document {
         Document { blocks: blocks.into_iter().map(Block::new).collect(), ..Default::default() }

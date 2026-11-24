@@ -1,15 +1,20 @@
 name: ci
 
-# Tests and builds on Windows and macOS. It only uploads workflow artifacts;
-# it does NOT create a release (releases come in Phase 4).
+# Tests and builds on Windows and macOS, and uploads the result as workflow artifacts.
+# A tag vX.Y.Z (or vX.Y.Z-rc.N, to rehearse) also creates a DRAFT GitHub release with them:
+# it is never published automatically.
 #
 # PDFium (the PDF reading engine) is a shared library that is not part of the crates:
 # it is downloaded with a pinned checksum, used by the tests, and shipped next to the app.
 on:
   push:
     branches: [main, "feat/**", "spikes/**"]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 # A newer commit on the same branch makes the older run pointless.
 concurrency:
@@ -33,15 +38,18 @@ jobs:
           - os: macos-latest
             pdfium: mac-univ
             pdfium_lib: lib
-            # The .app only, and only on arm64 (the runner's architecture): an Intel Mac
-            # cannot open it, although the PDFium library itself is universal.
+            # The .app only. It is universal (Intel and Apple Silicon) on main, on release tags
+            # and on manual runs; other branches build arm64 only, to save time.
             # libpdfium.dylib goes inside the .app through a CI-only config, so a normal
             # build on a Mac does not need the library to be downloaded.
             tauri_args: "--bundles app --config src-tauri/ci/macos-pdfium.conf.json"
+            rust_targets: aarch64-apple-darwin,x86_64-apple-darwin
     runs-on: ${{ matrix.os }}
     env:
       # where the tests look for PDFium
       PDFIUM_DIR: ${{ github.workspace }}/pdfium/${{ matrix.pdfium }}/${{ matrix.pdfium_lib }}
+      # empty for a build for the runner's own architecture
+      MAC_TARGET: ${{ matrix.os == 'macos-latest' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch') && 'universal-apple-darwin' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,8 +59,18 @@ jobs:
           cache: npm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_targets }}
 
       - uses: swatinem/rust-cache@v2
+
+      # Before the long build: a tag that does not match the manifests is a mistake.
+      - name: Release tag matches the version
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          TAG: ${{ github.ref_name }}
+        run: node scripts/check-version.mjs "$TAG"
 
       - run: npm ci
 
@@ -83,8 +101,31 @@ jobs:
       - name: Type-check the frontend
         run: npm run build
 
+      # The complete list of licenses ships with the program. A dependency with a license
+      # that about.toml does not accept fails the build.
+      - name: Cache cargo-about
+        id: about-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/cargo-about
+            ~/.cargo/bin/cargo-about.exe
+          key: cargo-about-0.9.3-cli-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Install cargo-about
+        if: steps.about-cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-about --version 0.9.3 --locked --features cli
+
+      - name: Generate the third-party licenses
+        shell: bash
+        run: |
+          # every platform's crates, so the licenses are read from them without network
+          cargo fetch --locked
+          cargo about generate --workspace --frozen --fail --output-file THIRD-PARTY-LICENSES.html about.hbs
+          node scripts/npm-licenses.mjs THIRD-PARTY-LICENSES.html
+
       - name: Build the app
-        run: npx tauri build ${{ matrix.tauri_args }}
+        run: npx tauri build ${{ matrix.tauri_args }} ${{ env.MAC_TARGET && format('--target {0}', env.MAC_TARGET) || '' }}
         env:
           # macOS: ad-hoc signature (no Apple Developer account). Ignored on Windows.
           APPLE_SIGNING_IDENTITY: "-"
@@ -94,11 +135,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $out = "my-pdf-tools-windows"
+          $out = "OutMark-windows"
           New-Item -ItemType Directory $out | Out-Null
-          Copy-Item target/release/my-pdf-tools.exe $out
+          Copy-Item target/release/OutMark.exe $out
           Copy-Item pdfium/win-x64/bin/pdfium.dll $out
-          Copy-Item LICENSE, NOTICE $out
+          Copy-Item LICENSE, NOTICE, THIRD-PARTY-LICENSES.html $out
+          Copy-Item packaging/LEEME-Windows.txt "$out/LEEME.txt"
           New-Item -ItemType Directory "$out/licenses" | Out-Null
           Copy-Item licenses/* "$out/licenses/"
           Copy-Item pdfium/win-x64/LICENSE "$out/licenses/PDFium-LICENSE.txt"
@@ -111,28 +153,38 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          out=my-pdf-tools-macos
+          out=OutMark-macos
           mkdir -p "$out/licenses"
-          ditto target/release/bundle/macos/my-pdf-tools.app "$out/my-pdf-tools.app"
-          test -f "$out/my-pdf-tools.app/Contents/Frameworks/libpdfium.dylib" \
+          ditto "target/${MAC_TARGET:+$MAC_TARGET/}release/bundle/macos/OutMark.app" "$out/OutMark.app"
+          test -f "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib" \
             || { echo "libpdfium.dylib is missing from the app"; exit 1; }
-          cp LICENSE NOTICE "$out/"
+          # A universal app needs both architectures in the program and in the library.
+          if [ -n "$MAC_TARGET" ]; then
+            for file in "$out/OutMark.app/Contents/MacOS/OutMark" "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib"; do
+              archs=$(lipo -archs "$file")
+              echo "$file: $archs"
+              case "$archs" in *x86_64*) ;; *) echo "x86_64 is missing"; exit 1 ;; esac
+              case "$archs" in *arm64*) ;; *) echo "arm64 is missing"; exit 1 ;; esac
+            done
+          fi
+          cp LICENSE NOTICE THIRD-PARTY-LICENSES.html "$out/"
+          cp packaging/LEEME-Mac.txt "$out/LEEME.txt"
           cp licenses/* "$out/licenses/"
           cp pdfium/mac-univ/LICENSE "$out/licenses/PDFium-LICENSE.txt"
           cp -R pdfium/mac-univ/licenses "$out/licenses/pdfium-third-party"
-          codesign --verify --deep --strict --verbose=2 "$out/my-pdf-tools.app"
+          codesign --verify --deep --strict --verbose=2 "$out/OutMark.app"
           # An app signed with the hardened runtime refuses to load a library signed by
           # someone else. Tauri turns it on by default, so src-tauri/ci/macos-pdfium.conf.json
           # turns it off (it only matters for notarized apps, which this one is not): fail if
           # it ever comes back. A notarized build would need it on plus the entitlement
           # com.apple.security.cs.disable-library-validation, or the library signed by us.
-          codesign --display --verbose=4 "$out/my-pdf-tools.app" 2>&1 | tee signature.txt
+          codesign --display --verbose=4 "$out/OutMark.app" 2>&1 | tee signature.txt
           if grep -q "flags=.*runtime" signature.txt; then
             echo "hardened runtime is on: libpdfium.dylib would not load"; exit 1
           fi
-          codesign --display --verbose=2 "$out/my-pdf-tools.app/Contents/Frameworks/libpdfium.dylib" 2>&1 || true
+          codesign --display --verbose=2 "$out/OutMark.app/Contents/Frameworks/libpdfium.dylib" 2>&1 || true
           # ditto keeps permissions and symlinks, unlike generic zip tools
-          ditto -c -k --sequesterRsrc --keepParent "$out" my-pdf-tools-macos.zip
+          ditto -c -k --sequesterRsrc --keepParent "$out" OutMark-macos.zip
 
       # Does a program laid out like the shipped app find PDFium by itself? `smoke` converts a
       # PDF with the default lookup, with PDFIUM_DIR unset. (The macOS check runs on a copy of
@@ -141,10 +193,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          cargo build -p mpt-tools --example smoke
+          cargo build -p outmark-tools --example smoke
           New-Item -ItemType Directory smoke-check | Out-Null
           Copy-Item target/debug/examples/smoke.exe smoke-check
-          Copy-Item my-pdf-tools-windows/pdfium.dll smoke-check
+          Copy-Item OutMark-windows/pdfium.dll smoke-check
           Remove-Item Env:PDFIUM_DIR
           & ./smoke-check/smoke.exe fixtures/pdf/slides.pdf
           if ($LASTEXITCODE -ne 0) { throw "the packaged layout cannot read a PDF" }
@@ -153,22 +205,66 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -euo pipefail
-          cargo build -p mpt-tools --example smoke
+          cargo build -p outmark-tools --example smoke
           mkdir smoke-check
-          ditto my-pdf-tools-macos/my-pdf-tools.app smoke-check/my-pdf-tools.app
-          cp target/debug/examples/smoke smoke-check/my-pdf-tools.app/Contents/MacOS/smoke
-          env -u PDFIUM_DIR smoke-check/my-pdf-tools.app/Contents/MacOS/smoke fixtures/pdf/slides.pdf
+          ditto OutMark-macos/OutMark.app smoke-check/OutMark.app
+          cp target/debug/examples/smoke smoke-check/OutMark.app/Contents/MacOS/smoke
+          env -u PDFIUM_DIR smoke-check/OutMark.app/Contents/MacOS/smoke fixtures/pdf/slides.pdf
 
       - name: Upload Windows folder
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v4
         with:
-          name: my-pdf-tools-windows
-          path: my-pdf-tools-windows
+          name: OutMark-windows
+          path: OutMark-windows
 
       - name: Upload macOS zip
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
-          name: my-pdf-tools-macos
-          path: my-pdf-tools-macos.zip
+          name: OutMark-macos
+          path: OutMark-macos.zip
+
+  # Only for tags, and only if both builds passed. The release stays a draft until a person
+  # reviews it and presses Publish.
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Package the downloads
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          mkdir -p upload stage
+          mv artifacts/OutMark-windows stage/OutMark
+          (cd stage && zip -qr "../upload/OutMark-$version-windows-x64.zip" OutMark)
+          # already zipped on the Mac with ditto, which keeps the signature and symlinks
+          cp artifacts/OutMark-macos/OutMark-macos.zip "upload/OutMark-$version-macos-universal.zip"
+          (cd upload && sha256sum OutMark-* > SHA256SUMS.txt && cat SHA256SUMS.txt)
+
+      - name: Create the draft release
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          base="${version%%-*}"
+          # a re-run replaces the files of the draft instead of creating another one
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" upload/* --clobber
+          else
+            prerelease=()
+            if [ "$version" != "$base" ]; then prerelease=(--prerelease); fi
+            gh release create "$TAG" upload/* --draft --verify-tag "${prerelease[@]}" \
+              --title "OutMark $version" --notes-file "packaging/release-notes-$base.md"
+          fi

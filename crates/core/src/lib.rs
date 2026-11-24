@@ -1,4 +1,4 @@
-//! Domain model and contracts of my-pdf-tools.
+//! Domain model and contracts of OutMark.
 //!
 //! This crate is the center of the hexagonal architecture: it depends on no
 //! other crate of the workspace and knows nothing about PDFium, Typst or Tauri.

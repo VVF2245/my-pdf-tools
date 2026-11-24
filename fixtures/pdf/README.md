@@ -6,7 +6,7 @@ with the project's own embedded Typst, so they carry no third-party copyright.
 Regenerate after editing a `.typ` file:
 
 ```bash
-cargo run -p mpt-engines --example gen_fixtures
+cargo run -p outmark-engines --example gen_fixtures
 ```
 
 - `slides.typ`: 16:9 slides, title and bullets close in size, a footer repeated on every

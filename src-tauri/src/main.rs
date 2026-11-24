@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    my_pdf_tools_lib::run()
+    outmark_lib::run()
 }

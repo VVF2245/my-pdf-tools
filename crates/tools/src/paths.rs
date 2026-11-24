@@ -4,7 +4,7 @@ use std::fs::{File, OpenOptions};
 use std::io;
 use std::path::{Path, PathBuf};
 
-use mpt_core::ConversionError;
+use outmark_core::ConversionError;
 
 /// Fails with `UnsupportedInput` unless the file has one of the `allowed` extensions
 /// (lowercase, without the dot).

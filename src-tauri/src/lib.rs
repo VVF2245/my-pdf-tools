@@ -5,8 +5,8 @@ mod reveal;
 
 use std::sync::Arc;
 
-use mpt_core::{ConversionError, ConversionRequest, Job, ToolDescriptor};
-use mpt_tools::{Registry, ToolsConfig};
+use outmark_core::{ConversionError, ConversionRequest, Job, ToolDescriptor};
+use outmark_tools::{Registry, ToolsConfig};
 use tauri::{AppHandle, Emitter, Manager, State};
 
 use jobs::{JobManager, JobSink};

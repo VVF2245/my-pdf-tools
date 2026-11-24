@@ -3,8 +3,8 @@
 
 use std::path::PathBuf;
 
-use mpt_core::ConversionError;
-use mpt_engines::pdf_reader::{PdfSource, PdfiumLocation, with_document};
+use outmark_core::ConversionError;
+use outmark_engines::pdf_reader::{PdfSource, PdfiumLocation, with_document};
 
 #[test]
 fn missing_library_is_engine_unavailable_and_names_the_folders_tried() {

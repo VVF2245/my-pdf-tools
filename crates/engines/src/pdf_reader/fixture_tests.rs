@@ -2,7 +2,7 @@
 //! (written in Typst by us; see the README there).
 //!
 //! If a test here fails after upgrading Typst, regenerate the fixtures first:
-//! `cargo run -p mpt-engines --example gen_fixtures`.
+//! `cargo run -p outmark-engines --example gen_fixtures`.
 
 use std::path::PathBuf;
 
@@ -56,7 +56,7 @@ fn committed_pdfs_match_their_typst_sources() {
         assert_eq!(
             as_text(&committed),
             as_text(&regenerated),
-            "{name}.pdf is stale: run `cargo run -p mpt-engines --example gen_fixtures`"
+            "{name}.pdf is stale: run `cargo run -p outmark-engines --example gen_fixtures`"
         );
     }
 }
@@ -94,7 +94,7 @@ fn slides_are_landscape_with_the_title_on_top_and_a_repeated_footer() {
 #[test]
 fn bullets_that_wrap_in_a_real_pdf_have_a_hanging_indent_and_are_joined() {
     use crate::pdf_reader::slides::{SlideOptions, slides_to_document};
-    use mpt_core::{BlockKind, Inline};
+    use outmark_core::{BlockKind, Inline};
 
     let Some(pages) = read("slides.pdf") else { return };
     let slide = &pages[2];
@@ -212,7 +212,7 @@ fn slides_convert_to_the_golden_markdown() {
     assert!(warnings.is_empty(), "{warnings:?}");
     let actual = to_markdown(&document, "slides_images").text;
 
-    // To accept an intended change: UPDATE_GOLDEN=1 cargo test -p mpt-engines slides_convert
+    // To accept an intended change: UPDATE_GOLDEN=1 cargo test -p outmark-engines slides_convert
     let golden = fixtures_dir().join("slides.expected.md");
     if std::env::var("UPDATE_GOLDEN").is_ok_and(|v| !v.is_empty() && v != "0") {
         std::fs::write(&golden, &actual).unwrap();
@@ -236,7 +236,7 @@ fn assert_golden(name: &str, actual: &str) {
 fn notes_convert_to_the_golden_markdown() {
     use crate::markdown_writer::to_markdown;
     use crate::pdf_reader::notes::{NoteOptions, notes_to_document};
-    use mpt_core::BlockKind;
+    use outmark_core::BlockKind;
 
     let Some(pages) = read("notes.pdf") else { return };
     let (document, warnings) = notes_to_document(&pages, NoteOptions::default());

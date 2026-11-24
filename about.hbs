@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OutMark: third-party licenses</title>
+  <style>
+    :root { color-scheme: light dark; --muted: #656d76; --border: #d0d7de; --accent: #c2560c; }
+    @media (prefers-color-scheme: dark) { :root { --muted: #9198a1; --border: #30363d; --accent: #f0883e; } }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.5; max-width: 860px; margin: 0 auto; padding: 32px 16px; }
+    h1 { margin-bottom: 4px; }
+    a { color: var(--accent); }
+    .muted { color: var(--muted); }
+    .overview { columns: 2; padding-left: 20px; }
+    .license { border-top: 1px solid var(--border); margin-top: 32px; padding-top: 8px; }
+    .used-by { padding-left: 20px; font-size: 0.9em; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.8em; border: 1px solid var(--border); border-radius: 6px; padding: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Third-party licenses</h1>
+  <p class="muted">OutMark is licensed under the AGPL-3.0. It includes the components below, each under its own license. PDFium and the bundled fonts have their texts in the <code>licenses</code> folder.</p>
+
+  <h2>Rust crates: licenses used</h2>
+  <ul class="overview">
+    {{#each overview}}
+    <li><a href="#{{id}}">{{name}}</a> ({{count}})</li>
+    {{/each}}
+  </ul>
+
+  {{#each licenses}}
+  <section class="license">
+    <h3 id="{{id}}">{{name}}</h3>
+    <p class="muted">Used by:</p>
+    <ul class="used-by">
+      {{#each used_by}}
+      <li><a href="{{#if crate.repository}}{{crate.repository}}{{else}}https://crates.io/crates/{{crate.name}}{{/if}}">{{crate.name}} {{crate.version}}</a></li>
+      {{/each}}
+    </ul>
+    <pre>{{text}}</pre>
+  </section>
+  {{/each}}
+
+  <!-- npm-packages -->
+</body>
+</html>

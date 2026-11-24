@@ -1,10 +1,10 @@
 //! Golden-file test: the Markdown reader must keep producing the same IR for the
 //! sample document. To accept an intended change, regenerate the expected file with
-//! `UPDATE_GOLDEN=1 cargo test -p mpt-engines --test golden` and review the diff.
+//! `UPDATE_GOLDEN=1 cargo test -p outmark-engines --test golden` and review the diff.
 
 use std::path::PathBuf;
 
-use mpt_engines::markdown::parse_markdown;
+use outmark_engines::markdown::parse_markdown;
 
 fn fixtures() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/md-sample")

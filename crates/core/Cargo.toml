@@ -1,5 +1,5 @@
 [package]
-name = "mpt-core"
+name = "outmark-core"
 description = "Domain model and contracts: document IR, Tool, errors. No engine dependencies."
 version.workspace = true
 edition.workspace = true

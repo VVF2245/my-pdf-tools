@@ -6,7 +6,7 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-use mpt_core::ConversionError;
+use outmark_core::ConversionError;
 use pdfium_render::prelude::*;
 
 /// Folders where the PDFium shared library is looked for, in order.

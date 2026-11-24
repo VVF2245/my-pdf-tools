@@ -1,0 +1,73 @@
+﻿OutMark para Mac
+================
+
+OutMark convierte PDF a Markdown y Markdown a PDF en tu ordenador.
+No necesita internet ni una cuenta, y tus documentos no salen de tu equipo.
+
+
+CÓMO ABRIRLO
+------------
+
+1. Haz doble clic en el fichero .zip para descomprimirlo.
+
+2. Arrastra "OutMark" a la carpeta Aplicaciones.
+
+3. Abre "OutMark" desde Aplicaciones con doble clic.
+
+4. La primera vez, el Mac dirá que no puede comprobar la aplicación y no
+   la abrirá. Sale porque OutMark no tiene una firma de pago de Apple, no
+   porque se haya detectado un virus. Hazlo solo si te ha llegado de alguien
+   de confianza o de la página oficial del proyecto (la dirección está al
+   final de este texto). Para permitirlo:
+     - Cierra el aviso con "OK" o "Aceptar". No lo tires a la papelera.
+     - Abre "Ajustes del Sistema" y entra en "Privacidad y seguridad".
+     - Baja hasta "Seguridad". Verás un mensaje sobre OutMark.
+     - Pulsa "Abrir igualmente" y confirma con tu contraseña o Touch ID.
+
+   Solo hay que hacerlo una vez.
+
+
+CÓMO SE USA
+-----------
+
+1. Arriba, elige qué quieres hacer: "PDF → Markdown" o "Markdown → PDF".
+2. Arrastra tus ficheros a la ventana o pulsa "Buscar ficheros...".
+3. Si quieres, cambia las opciones. Cada una explica para qué sirve.
+4. Pulsa "Convertir".
+5. Cuando termine, pulsa "Mostrar en la carpeta" para ver el resultado.
+
+Los resultados se guardan en tu carpeta Descargas. Puedes elegir otra con
+"Cambiar...". OutMark nunca borra ni modifica el fichero original, y nunca
+sobrescribe un fichero que ya exista.
+
+
+SI ALGO NO VA BIEN
+------------------
+
+- "El documento no tiene texto extraíble": es un PDF escaneado o una foto.
+  OutMark todavía no sabe leer texto dentro de imágenes.
+
+- El resultado no queda perfecto: un PDF no guarda bien su estructura,
+  así que la conversión es aproximada. Revisa los "Avisos" de cada fichero.
+
+- El Mac dice que la aplicación "está dañada": no suele ser verdad, es otra
+  forma del aviso de seguridad. Si te fías de quien te la pasó, abre la
+  aplicación Terminal, pega esta línea y pulsa Intro:
+
+  xattr -dr com.apple.quarantine /Applications/OutMark.app
+
+  Después vuelve a abrir OutMark. Si tienes dudas, pide ayuda antes.
+
+
+PARA DESINSTALARLO
+------------------
+
+Arrastra "OutMark" desde Aplicaciones a la Papelera.
+
+
+MÁS INFORMACIÓN
+---------------
+
+Proyecto y código fuente: https://github.com/VVF2245/outmark
+OutMark es software libre bajo la licencia AGPL-3.0 (fichero LICENSE).
+Los componentes de terceros están en THIRD-PARTY-LICENSES.html y NOTICE.

@@ -3,8 +3,8 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use mpt_core::{CancelToken, ConversionRequest, NoProgress, OptionValue};
-use mpt_tools::Registry;
+use outmark_core::{CancelToken, ConversionRequest, NoProgress, OptionValue};
+use outmark_tools::Registry;
 
 fn sample_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/md-sample")
@@ -30,7 +30,7 @@ struct Scratch(PathBuf);
 
 impl Scratch {
     fn new(name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("mpt-e2e-{}-{name}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("outmark-e2e-{}-{name}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         Self(dir)
     }

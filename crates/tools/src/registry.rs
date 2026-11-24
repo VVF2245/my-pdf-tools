@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use mpt_core::{Tool, ToolDescriptor};
+use outmark_core::{Tool, ToolDescriptor};
 
 use crate::{MdToPdf, PdfToMd, ToolsConfig};
 
