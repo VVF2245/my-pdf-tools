@@ -17,7 +17,18 @@
 
 OutMark is a desktop app for people who work with notes, slides and documents. Drop in your files, choose a few options and get the result in your Downloads folder. There is no account, no upload, no network access and no telemetry.
 
-> **Status: first release in preparation (v0.1.0).** There is nothing to download yet. You can [build it from source](#development). The interface is in Spanish for now.
+## Download
+
+Get the latest version from the [**Releases page**](https://github.com/VVF2245/outmark/releases/latest):
+
+| System | File |
+| --- | --- |
+| **Windows** (64-bit) | `OutMark-<version>-windows-x64.zip` |
+| **macOS** (Apple Silicon and Intel) | `OutMark-<version>-macos-universal.zip` |
+
+Unzip it and follow `LEEME.txt`. There is nothing to install. The builds are not signed with a paid certificate, so your system shows a security warning the first time, and the guide explains how to continue.
+
+The interface is in Spanish for now. You can also [build it from source](#development).
 
 ## Features
 
@@ -58,7 +69,6 @@ Reading structure from a PDF is heuristic, so OutMark tells you what it could no
 - **Images:** they are placed after the text of their page, not at their exact position. Some figures embedded by LaTeX are not found.
 - **Columns:** Markdown has no columns, so multi-column text becomes a single column in reading order. This is checked with LaTeX and official gazette PDFs, not with Word or InDesign files.
 - **Unsigned builds:** Windows and macOS show a security warning the first time you open the app.
-- **macOS:** Apple Silicon only for now.
 
 ## How it works
 
@@ -149,9 +159,12 @@ The program is a folder, not a single file, because PDFium ships next to the exe
 #   pdfium/win-x64/bin/pdfium.dll, LICENSE, NOTICE, licenses/ and pdfium/win-x64/LICENSE
 npx tauri build --no-bundle
 
-# macOS: the library goes inside the .app, so Tauri signs it with the rest
-npx tauri build --bundles app --config src-tauri/ci/macos-pdfium.conf.json
+# macOS: the library goes inside the .app, so Tauri signs it with the rest.
+#   Universal build; needs the aarch64-apple-darwin and x86_64-apple-darwin Rust targets
+npx tauri build --bundles app --config src-tauri/ci/macos-pdfium.conf.json --target universal-apple-darwin
 ```
+
+A tag `vX.Y.Z` builds both systems and creates a draft GitHub release, which is published by hand.
 
 </details>
 
