@@ -85,6 +85,8 @@ enum ImagesMode {
     /// Embedded images, and a picture of each slide that holds a diagram (slides mode).
     Auto,
     Embedded,
+    /// Like `Auto`, but icons and repeated logos are kept too.
+    All,
     None,
 }
 
@@ -92,6 +94,7 @@ impl ImagesMode {
     fn from_option(request: &ConversionRequest) -> Self {
         match request.text_option("images") {
             Some("embedded") => Self::Embedded,
+            Some("all") => Self::All,
             Some("none") => Self::None,
             _ => Self::Auto,
         }
@@ -141,7 +144,7 @@ impl Tool for PdfToMd {
                     label: "option.images".to_string(),
                     help: Some("option.images.help".to_string()),
                     kind: OptionKind::Choice {
-                        choices: ["auto", "embedded", "none"]
+                        choices: ["auto", "embedded", "all", "none"]
                             .iter()
                             .map(|m| OptionChoice { value: m.to_string(), label: format!("images.{m}") })
                             .collect(),
@@ -196,9 +199,11 @@ impl Tool for PdfToMd {
                 media = extract_media(&self.pdfium, PdfSource::Path(input), first, last, &|_, _| {
                     !cancel.is_cancelled()
                 })?;
-                let dropped = filter_images(&mut media.pages);
-                if dropped > 0 {
-                    report.warnings.push(warning("imagesSkipped", dropped.to_string(), None));
+                if images_mode != ImagesMode::All {
+                    let dropped = filter_images(&mut media.pages);
+                    if dropped > 0 {
+                        report.warnings.push(warning("imagesSkipped", dropped.to_string(), None));
+                    }
                 }
                 if media.failed > 0 {
                     report.warnings.push(warning("imagesFailed", media.failed.to_string(), None));
@@ -229,7 +234,7 @@ impl Tool for PdfToMd {
 
             // A slide with a diagram is drawn with shapes, not images: it gets a picture.
             let mut renders = Vec::new();
-            if !notes && images_mode == ImagesMode::Auto {
+            if !notes && matches!(images_mode, ImagesMode::Auto | ImagesMode::All) {
                 let graphic: Vec<u32> =
                     media.pages.iter().filter(|p| p.graphics >= GRAPHIC_PAGE_SHAPES).map(|p| p.number).collect();
                 if !graphic.is_empty() {
@@ -529,6 +534,31 @@ mod tests {
     }
 
     #[test]
+    fn all_images_keeps_the_repeated_logo() {
+        let Some(tool) = tool() else { return };
+        let out = TempDir::new("pdf-md-all");
+        let auto = run(&tool, &request(&fixture("images.pdf"), out.path(), &[])).unwrap();
+        let all = run(&tool, &request(&fixture("images.pdf"), out.path(), &[("images", OptionValue::Text("all".into()))])).unwrap();
+
+        let count = |outcome: &ConversionOutcome| {
+            std::fs::read_to_string(&outcome.outputs[0]).unwrap().matches("![").count()
+        };
+        // auto keeps only the photo and drops one logo per page
+        let logos: usize = auto
+            .report
+            .warnings
+            .iter()
+            .find(|w| w.code == "imagesSkipped")
+            .and_then(|w| w.detail.parse().ok())
+            .expect("imagesSkipped with a count");
+        assert_eq!(count(&auto), 1);
+        assert!(logos >= 2, "{logos}");
+        // all keeps the photo and every logo, and has nothing to report
+        assert!(!codes(&all).contains(&"imagesSkipped"), "{:?}", codes(&all));
+        assert_eq!(count(&all), 1 + logos);
+    }
+
+    #[test]
     fn without_images_the_result_stays_loose() {
         let Some(tool) = tool() else { return };
         let out = TempDir::new("pdf-md-loose");
@@ -538,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn a_slide_with_a_diagram_gets_a_picture_only_in_auto_mode() {
+    fn a_slide_with_a_diagram_gets_a_picture_in_auto_and_all_modes() {
         let Some(tool) = tool() else { return };
         let out = TempDir::new("pdf-md-diagram");
 
@@ -548,6 +578,10 @@ mod tests {
         let md = PathBuf::from(&auto.outputs[0]);
         assert!(std::fs::read_to_string(&md).unwrap().contains("![p1](diagram_images/img-1.png)"));
         assert!(md.parent().unwrap().join("diagram_images/img-1.png").is_file());
+
+        let all = run(&tool, &request(&fixture("diagram.pdf"), out.path(), &[("images", OptionValue::Text("all".into()))])).unwrap();
+        let warning = all.report.warnings.iter().find(|w| w.code == "pageRendered").expect("pageRendered");
+        assert_eq!(warning.page, Some(1));
 
         let embedded =
             run(&tool, &request(&fixture("diagram.pdf"), out.path(), &[("images", OptionValue::Text("embedded".into()))])).unwrap();

@@ -39,7 +39,7 @@ The interface is in Spanish for now. You can also [build it from source](#develo
 | **Notes, articles and books** | Headings, paragraphs, lists, code blocks and multi-column text in reading order |
 | **Slide decks** | One section per slide, with its title and nested bullets |
 | **Tables** | Markdown tables, with numeric columns aligned |
-| **Images** | PNG files linked from the document; logos and tiny icons are filtered out |
+| **Images** | PNG files linked from the document; logos and tiny icons are filtered out, unless you ask for all of them |
 | **Diagrams on slides** | A picture of the whole slide, so the drawing is not lost |
 
 OutMark detects whether a PDF is a document or a slide deck, and you can always choose yourself. Repeated headers, footers and page numbers can be removed, and you can convert only a range of pages.
